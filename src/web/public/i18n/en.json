@@ -261,7 +261,8 @@
       "FINGERPRINT_MODEL": "only families matching this glob",
       "LANE_DAY": "UTC day of the rollup (default yesterday)",
       "LANE_LIVE": "Judge the current window now, change nothing",
-      "LANE_LIMIT": "Lanes to print"
+      "LANE_LIMIT": "Lanes to print",
+      "LANE_ALL": "Every provider's lanes, not only the configured scope"
     },
     "STATUS": {
       "UI_RUNNING": "new-api-sync UI running at http://localhost:{port}"

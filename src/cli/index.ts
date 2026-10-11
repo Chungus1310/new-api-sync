@@ -244,6 +244,7 @@ program
   .option("-c, --config <path>", t("CLI.OPTION.CONFIG_PATH"))
   .option("--day <day>", t("CLI.OPTION.LANE_DAY"))
   .option("--live", t("CLI.OPTION.LANE_LIVE"))
+  .option("--all", t("CLI.OPTION.LANE_ALL"))
   .option("--limit <n>", t("CLI.OPTION.LANE_LIMIT"), "30")
   .option("--json", t("CLI.OPTION.RECONCILE_JSON"))
   .action(
@@ -251,6 +252,7 @@ program
       config?: string;
       day?: string;
       live?: boolean;
+      all?: boolean;
       limit: string;
       json?: boolean;
     }) => {
@@ -259,11 +261,12 @@ program
         .toISOString()
         .slice(0, 10);
       const report = options.live
-        ? await liveLaneReport(config)
+        ? await liveLaneReport(config, options.all)
         : await rollupLaneReport(
             config,
             options.day ?? yesterday,
             Number(options.limit),
+            options.all,
           );
       if (options.json) console.log(JSON.stringify(report, null, 2));
       else printLaneReport(report);

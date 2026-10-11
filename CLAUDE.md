@@ -20,7 +20,8 @@ bun sync lane-report [--day 2026-10-11] [--live] [--json]   # lane grader: a day
 ```
 
 Lane grader (`src/core/quality/`, config `laneGrader`, needs `targetDb`): every metadata tick, after
-reverify, it reads the last `windowHours` (6) of each live lane in `providers` from the gateway's
+reverify, it reads the last `windowHours` (6) of each live lane in `providers` (channel tags, `*` for
+every lane; `lane-report --all` shows every provider either way) from the gateway's
 request log and compares it against every other lane of the same model in the same window. A lane
 with enough traffic (20 requests, 3 users) and clearly worse empty successes (8%, 3x peers), short
 answers to long prompts (15%, 2x) or errors without 429s (30%, 2x plus 10 points) is set to status 2

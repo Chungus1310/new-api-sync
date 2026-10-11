@@ -261,7 +261,8 @@
       "FINGERPRINT_MODEL": "仅包含匹配该通配符的模型族",
       "LANE_DAY": "汇总的 UTC 日期（默认昨天）",
       "LANE_LIVE": "立即评估当前窗口，不做任何改动",
-      "LANE_LIMIT": "显示的线路数量"
+      "LANE_LIMIT": "显示的线路数量",
+      "LANE_ALL": "所有提供商的线路，而不只是配置的范围"
     },
     "STATUS": {
       "UI_RUNNING": "new-api-sync 界面运行于 http://localhost:{port}"

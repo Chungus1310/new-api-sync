@@ -18,10 +18,12 @@ export interface LaneReport {
 /** The grader's judgement of the current window, without acting on it. */
 export async function liveLaneReport(
   config: RuntimeConfig,
+  all = false,
 ): Promise<LaneReport> {
   if (!config.targetDb || !config.laneGrader)
     throw new Error(t("CORE.LANE_GRADER.REPORT_NEEDS_CONFIG"));
-  const g = resolveGrader(config.laneGrader);
+  const scoped = resolveGrader(config.laneGrader);
+  const g = all ? { ...scoped, providers: ["*"] } : scoped;
   const target = new NewApiClient(config.target, "target");
   const now = Date.now() / 1000;
   const [channels, stats] = await Promise.all([
@@ -36,19 +38,21 @@ export async function rollupLaneReport(
   config: RuntimeConfig,
   day: string,
   limit: number,
+  all = false,
 ): Promise<LaneReport> {
   const store = config.verdictStore
     ? new VerdictStore(config.verdictStore)
     : null;
   const rows = await readRollup(day, store);
   if (!rows) return { mode: "rollup", day, worst: [] };
-  const scope = new Set(config.laneGrader?.providers ?? []);
+  const providers = all ? ["*"] : (config.laneGrader?.providers ?? ["*"]);
   const bad = (r: RollupRow) =>
     (r.emptyOk + r.shortOk + countedErrors(r)) / Math.max(1, r.requests);
   const worst = rows
     .filter(
       (r) =>
-        r.requests >= 20 && (scope.size === 0 || scope.has(r.provider ?? "")),
+        r.requests >= 20 &&
+        (providers.includes("*") || providers.includes(r.provider ?? "")),
     )
     .sort((a, b) => bad(b) - bad(a))
     .slice(0, limit);

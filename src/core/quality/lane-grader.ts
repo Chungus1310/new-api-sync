@@ -62,6 +62,10 @@ export interface Judgement {
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
+/** `providers` names channel tags; `*` grades every lane. */
+export const inScope = (providers: readonly string[], ch: Channel): boolean =>
+  providers.includes("*") || providers.includes(ch.tag ?? "");
+
 function peerRates(stats: readonly LaneStat[]): PeerRates {
   const n = stats.reduce((s, x) => s + x.requests, 0);
   if (n === 0) return { empty: 0, short: 0, error: 0, lanes: 0 };
@@ -87,11 +91,10 @@ export function judgeLanes(
   const byModel = new Map<string, LaneStat[]>();
   for (const s of stats)
     byModel.set(s.model, [...(byModel.get(s.model) ?? []), s]);
-  const scope = new Set(g.providers);
   const out: Judgement[] = [];
   for (const s of stats) {
     const ch = byId.get(s.channelId);
-    if (!ch || ch.status !== ENABLED || !scope.has(ch.tag ?? "")) continue;
+    if (!ch || ch.status !== ENABLED || !inScope(g.providers, ch)) continue;
     if (s.requests < g.minRequests || s.users < g.minUsers) continue;
     const others = (byModel.get(s.model) ?? []).filter(
       (o) => o.channelId !== s.channelId,
@@ -301,10 +304,9 @@ export async function gradeLanes(
     (now - g.windowHours * HOUR_MS) / 1000,
     now / 1000,
   );
-  const scope = new Set(g.providers);
   result.graded = stats.filter((s) => {
     const ch = channels.find((c) => c.id === s.channelId);
-    return !!ch && scope.has(ch.tag ?? "") && ch.status === ENABLED;
+    return !!ch && inScope(g.providers, ch) && ch.status === ENABLED;
   }).length;
   const quarantinedIds = new Set(ledger.active.map((e) => e.channelId));
   const flagged = judgeLanes(stats, channels, g)
