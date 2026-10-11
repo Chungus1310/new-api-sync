@@ -185,10 +185,11 @@ config.yml overrides per maker id or `*`; `[]` promotes a maker), the lane passe
 recorded: `logs/observe-<date>.jsonl` and the store object `observe/<hour>.jsonl` carry one line per
 ladder run with maker, wire, every probe's reply, every finding, `wouldFlag` and every report
 (signature, token truth, envelope, throughput, survey, think leak, wrapper leak, answer fingerprint).
-The survey (`reports.survey`) is four questions asked beside the ladder and recorded as answered,
-never judged: a verbatim replay of prior instructions (a relay's injected system prompt, matched by
-`wrapper-leak`), a sum with a fact check and its hidden token count, a JSON object naming maker and
-model, a one sentence self description. That log is what a maker is promoted from.
+The survey (`reports.survey`) is five questions asked beside the ladder and recorded as answered: a
+verbatim replay of prior instructions (a relay's injected system prompt, matched by `wrapper-leak`
+and `mask-contradiction`, both notes), a sum with a fact check and its hidden token count, a JSON
+object naming maker and model, a one sentence self description, and a historical question Chinese
+input filters block, the only one judged (by `fake-200`). That log is what a maker is promoted from.
 
 Answer fingerprints (`testing/answer-fingerprints.ts`): a ladder run also asks the one-word
 battery (8 cells x `authenticity.answerFingerprint.repeats`, default 3, at temperature 1, no nonce,
