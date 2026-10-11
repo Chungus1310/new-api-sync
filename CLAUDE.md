@@ -178,7 +178,9 @@ mistral, alibaba, meta, xai, tencent; an unknown id is judged by the wire's defa
 seller pin as `bodyExtras` and the ih bid as headers, findings mapped onto the verdict cache, the
 first decisive finding's reason as the blacklist reason, an inconclusive one leaving the lane
 unverified without a cache write). Every text lane runs the ladder; only anthropic's findings have
-authority. For every other maker every ladder rule is observe only (`authenticity.observeOnly` in
+authority, except `masked-identity` and `fake-200` (a platform refusal or error page sent as the
+reply at HTTP 200, tripped by the survey's `sensitive` question), which judge every maker. For every
+other maker every ladder rule is observe only (`authenticity.observeOnly` in
 config.yml overrides per maker id or `*`; `[]` promotes a maker), the lane passes and the finding is
 recorded: `logs/observe-<date>.jsonl` and the store object `observe/<hour>.jsonl` carry one line per
 ladder run with maker, wire, every probe's reply, every finding, `wouldFlag` and every report

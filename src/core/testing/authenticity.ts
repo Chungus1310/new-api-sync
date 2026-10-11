@@ -75,8 +75,9 @@ const LADDER: readonly RuleId[] = [
   "tier-self-report",
 ];
 // Judged for every maker: a model coached to hide its backend restates the
-// coaching in its own reasoning, which no self-confusion explains away.
-const ENFORCED: readonly RuleId[] = ["masked-identity"];
+// coaching in its own reasoning, which no self-confusion explains away, and a
+// platform refusal sent as the reply at 200 is billed and never failed over.
+const ENFORCED: readonly RuleId[] = ["masked-identity", "fake-200"];
 // Never a verdict, only evidence. The survey asks its own questions (injected
 // system prompt, a sum, a JSON self-description); the answer fingerprint is
 // the one-word battery accumulated per lane in answer-fingerprints.ts.
@@ -87,6 +88,7 @@ const OBSERVED: readonly RuleId[] = [
   "survey",
   "think-leak",
   "wrapper-leak",
+  "mask-contradiction",
   "answer-fingerprint",
 ];
 
@@ -226,6 +228,9 @@ function observe(
       latencyMs: p.latencyMs,
       detectedModel: p.detectedModel,
       usage: p.usage,
+      finishReason: p.finishReason,
+      reasoning: p.reasoning,
+      errorBody: p.errorBody,
       text: p.responseText,
     })),
     reports: run.reports,
