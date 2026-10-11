@@ -275,16 +275,41 @@ function reasoningWhitelisted(prefix: string, model: string): boolean {
   });
 }
 
-const REASONING_PROMPT = "Is 1001 prime? Think it through step by step, then answer.";
+const REASONING_PROMPT =
+  "Is 1001 prime? Think it through step by step, then answer.";
 
-const mkDetail = (model: string, channelType: number, success: boolean, streamSuccess: boolean | null, toolCallSuccess: boolean | null, toolParallel: boolean | null, authenticityProbed: boolean, httpStatus?: number, errorText?: string): ModelTestDetail => ({ model, success, streamSuccess, toolCallSuccess, toolParallel, authenticityProbed, channelType, ...(httpStatus !== undefined && { httpStatus }), ...(errorText && { errorText }) });
+const mkDetail = (
+  model: string,
+  channelType: number,
+  success: boolean,
+  streamSuccess: boolean | null,
+  toolCallSuccess: boolean | null,
+  toolParallel: boolean | null,
+  authenticityProbed: boolean,
+  httpStatus?: number,
+  errorText?: string,
+): ModelTestDetail => ({
+  model,
+  success,
+  streamSuccess,
+  toolCallSuccess,
+  toolParallel,
+  authenticityProbed,
+  channelType,
+  ...(httpStatus !== undefined && { httpStatus }),
+  ...(errorText && { errorText }),
+});
 
 const exchangeErrorText = (r: TestExchange): string =>
-  (typeof r.response === "string" ? r.response : JSON.stringify(r.response ?? r.error ?? "")).slice(0, 300);
+  (typeof r.response === "string"
+    ? r.response
+    : JSON.stringify(r.response ?? r.error ?? "")
+  ).slice(0, 300);
 
 // Balance-type answers: the caller's own wallet at that upstream is empty, which
 // says nothing about whether the lane works.
-const BALANCE_ERROR_RE = /可用额度不足|余额不足|额度不足|insufficient[_ ](user_)?(quota|balance|credit)|no credits available|out of credits|credit balance is too low/i;
+const BALANCE_ERROR_RE =
+  /可用额度不足|余额不足|额度不足|insufficient[_ ](user_)?(quota|balance|credit)|no credits available|out of credits|credit balance is too low/i;
 export const isBalanceError = (d: ModelTestDetail): boolean =>
   !d.success && d.errorText !== undefined && BALANCE_ERROR_RE.test(d.errorText);
 
@@ -456,13 +481,15 @@ async function testModels(opts: {
         }
         // Visible reasoning is evidence, so it is refreshed daily even while the
         // functional pass is still cached.
-        const reasoningGlobs = reasoningRequired[prefix.split(/[:/]/)[0] ?? ""] ?? [];
+        const reasoningGlobs =
+          reasoningRequired[prefix.split(/[:/]/)[0] ?? ""] ?? [];
         const bareModel = (model.split("/").pop() ?? model).toLowerCase();
         const mustReason =
           matchesAnyPattern(bareModel, reasoningGlobs) &&
           !reasoningWhitelisted(prefix, bareModel);
         const probeReasoning = async (): Promise<boolean | null> => {
-          if (!isText || opts.channelType === CHANNEL_TYPES.ANTHROPIC) return null;
+          if (!isText || opts.channelType === CHANNEL_TYPES.ANTHROPIC)
+            return null;
           // An entry that never tried the effort variant cannot say the lane
           // is unable to think, so it is measured again.
           const known = getVerdict(blacklistKey)?.reasoning;
@@ -483,10 +510,14 @@ async function testModels(opts: {
                   url: `${reqOpts.baseUrl}/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${reqOpts.apiKey}`,
                   headers: { "Content-Type": "application/json" },
                   body: {
-                    contents: [{ role: "user", parts: [{ text: REASONING_PROMPT }] }],
+                    contents: [
+                      { role: "user", parts: [{ text: REASONING_PROMPT }] },
+                    ],
                     generationConfig: {
                       maxOutputTokens: 2000,
-                      ...(effort && { thinkingConfig: { includeThoughts: true } }),
+                      ...(effort && {
+                        thinkingConfig: { includeThoughts: true },
+                      }),
                     },
                   },
                   completionMarker: "",
@@ -616,10 +647,13 @@ async function testModels(opts: {
         // every behavioural probe: the reply IS a real Claude, just not the one
         // asked for. Only the echoed model name catches it (bcc1 "hyper" served
         // opus-4-6 for both opus-4-8 and opus-4-7).
-        const served = servedModel(httpResult) ?? servedModel(streamResult);
-        // Relays tag free routes as "[free]model" and echo the plain upstream id.
-        const substituted =
-          served !== null && !modelsMatch(model.replace(/^\[[^\]]*\]/, ""), served);
+        // Both replies count: aichixia echoed the requested id on the plain call
+        // and the real one (gpt-oss-20b for gpt-5-mini) only on the stream.
+        const served =
+          [servedModel(httpResult), servedModel(streamResult)].find(
+            (s): s is string => s !== null && !modelsMatch(model, s),
+          ) ?? null;
+        const substituted = served !== null;
         if (substituted) {
           consola.warn(
             `[${prefix}] ${model}: ${t("CORE.TESTER.ERR_MODEL_SUBSTITUTED", { got: served })}`,

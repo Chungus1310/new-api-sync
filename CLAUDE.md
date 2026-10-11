@@ -195,8 +195,11 @@ mistral, alibaba, meta, xai, tencent; an unknown id is judged by the wire's defa
 seller pin as `bodyExtras` and the ih bid as headers, findings mapped onto the verdict cache, the
 first decisive finding's reason as the blacklist reason, an inconclusive one leaving the lane
 unverified without a cache write). Every text lane runs the ladder; only anthropic's findings have
-authority, except `masked-identity` and `fake-200` (a platform refusal or error page sent as the
-reply at HTTP 200, tripped by the survey's `sensitive` question), which judge every maker. For every
+authority, except `masked-identity`, `fake-200` (a platform refusal or error page sent as the
+reply at HTTP 200, tripped by the survey's `sensitive` question), `substituted` and
+`served-model-mismatch` (the reply's own model field names another model), which judge every
+maker. The functional test applies the same model-field check to both its plain and its stream
+reply: aichixia echoed the requested id on one and the real model on the other. For every
 other maker every ladder rule is observe only (`authenticity.observeOnly` in
 config.yml overrides per maker id or `*`; `[]` promotes a maker), the lane passes and the finding is
 recorded: `logs/observe-<date>.jsonl` and the store object `observe/<hour>.jsonl` carry one line per
