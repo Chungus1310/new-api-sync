@@ -74,6 +74,9 @@ const LADDER: readonly RuleId[] = [
   "quorum",
   "tier-self-report",
 ];
+// Judged for every maker: a model coached to hide its backend restates the
+// coaching in its own reasoning, which no self-confusion explains away.
+const ENFORCED: readonly RuleId[] = ["masked-identity"];
 // Never a verdict, only evidence. The survey asks its own questions (injected
 // system prompt, a sum, a JSON self-description); the answer fingerprint is
 // the one-word battery accumulated per lane in answer-fingerprints.ts.
@@ -284,6 +287,7 @@ export async function runAuthenticity(
     ...(opts.ladder
       ? [
           ...LADDER,
+          ...ENFORCED,
           ...OBSERVED.filter((r) => battery || r !== "answer-fingerprint"),
         ]
       : []),
