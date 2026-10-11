@@ -284,6 +284,34 @@ export const ConfigSchema = T.Object({
   // Public IPs our gateway egresses from. When set, `sync reconcile` flags
   // upstream rows logged from any other address.
   targetEgressIps: Opt(T.Array(str)),
+  // Grades live lanes on their own traffic in `targetDb` (the metadata cron, after
+  // reverify) against the other lanes of the same model, quarantines clear
+  // outliers as status 2 for a while and writes a daily per-lane rollup. Rates
+  // are shares of the lane's requests; a peer multiple compares against the
+  // pooled rate of every other lane serving that model in the same window.
+  laneGrader: Opt(
+    T.Object({
+      providers: T.Array(str),
+      dryRun: Opt(T.Boolean()),
+      windowHours: Opt(T.Number({ minimum: 1, maximum: 48 })),
+      minRequests: Opt(T.Integer({ minimum: 1 })),
+      minUsers: Opt(T.Integer({ minimum: 1 })),
+      emptyRate: Opt(T.Number({ minimum: 0, maximum: 1 })),
+      emptyPeerMultiple: Opt(T.Number({ minimum: 1 })),
+      shortRate: Opt(T.Number({ minimum: 0, maximum: 1 })),
+      shortPeerMultiple: Opt(T.Number({ minimum: 1 })),
+      errorRate: Opt(T.Number({ minimum: 0, maximum: 1 })),
+      errorPeerMultiple: Opt(T.Number({ minimum: 1 })),
+      errorPeerMargin: Opt(T.Number({ minimum: 0, maximum: 1 })),
+      quarantineHours: Opt(T.Number({ minimum: 0.25 })),
+      maxQuarantineHours: Opt(T.Number({ minimum: 0.25 })),
+      strikeWindowDays: Opt(T.Number({ minimum: 1 })),
+      candidateStrikes: Opt(T.Integer({ minimum: 2 })),
+      maxShareOfModel: Opt(T.Number({ minimum: 0, maximum: 1 })),
+      minLiveLanesPerModel: Opt(T.Integer({ minimum: 1 })),
+      maxPerTick: Opt(T.Integer({ minimum: 1 })),
+    }),
+  ),
   skipUnprofitableText: Opt(T.Boolean()),
   globalConcurrency: Opt(T.Integer({ minimum: 1, maximum: 1000 })),
   perUpstreamConcurrency: Opt(T.Integer({ minimum: 1, maximum: 1000 })),

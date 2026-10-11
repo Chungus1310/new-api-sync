@@ -78,6 +78,15 @@ async function clickhouseRows(
   query: string,
   params: Record<string, string>,
 ): Promise<GatewayLogRow[]> {
+  return (await clickhouseLines(url, query, params)).map(toGatewayRow);
+}
+
+/** One JSON object per line from the ClickHouse HTTP interface at `url`. */
+export async function clickhouseLines(
+  url: string,
+  query: string,
+  params: Record<string, string>,
+): Promise<string[]> {
   const target = new URL(url);
   const database = decodeURIComponent(target.pathname.replace(/^\/+/, ""));
   const endpoint = new URL(`${target.protocol}//${target.host}/`);
@@ -99,10 +108,7 @@ async function clickhouseRows(
   });
   const body = await res.text();
   if (!res.ok) throw new Error(`ClickHouse ${res.status}: ${body.trim()}`);
-  return body
-    .split("\n")
-    .filter((line) => line !== "")
-    .map(toGatewayRow);
+  return body.split("\n").filter((line) => line !== "");
 }
 
 export async function fetchGatewayLogs(

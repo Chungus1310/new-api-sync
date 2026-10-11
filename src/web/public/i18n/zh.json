@@ -241,7 +241,8 @@
       "METADATA_DESC": "为现有模型重新写入元数据（发布日期、参数、上下文、描述）；不探测/测试，不改动渠道或定价",
       "BALANCE_DESC": "查询目标站点与所有已配置供应商的剩余余额；只读，不探测也不写入",
       "RECONCILE_DESC": "按时间窗口把每个上游供应商自己的用量日志与我方网关日志逐条对账；列出未经我方网关的用量与外来令牌；只读",
-      "FINGERPRINTS_DESC": "打印答案指纹汇总：每个模型族的可信参考，再列出每条通道的散度、身份混合率、包装层大小与风格类别；只读"
+      "FINGERPRINTS_DESC": "打印答案指纹汇总：每个模型族的可信参考，再列出每条通道的散度、身份混合率、包装层大小与风格类别；只读",
+      "LANE_REPORT_DESC": "线路评估：某天每条线路的流量汇总，或立即评估当前窗口但不做任何改动（--live）"
     },
     "OPTION": {
       "CONFIG_PATH": "配置文件路径",
@@ -257,7 +258,10 @@
       "RECONCILE_JSON": "以 JSON 输出结果而非摘要",
       "FROM": "时间窗口起点：ISO 日期、ISO 日期时间或 unix 秒（覆盖 --since）",
       "TO": "时间窗口终点，格式同上或 \"now\"（默认 now）",
-      "FINGERPRINT_MODEL": "仅包含匹配该通配符的模型族"
+      "FINGERPRINT_MODEL": "仅包含匹配该通配符的模型族",
+      "LANE_DAY": "汇总的 UTC 日期（默认昨天）",
+      "LANE_LIVE": "立即评估当前窗口，不做任何改动",
+      "LANE_LIMIT": "显示的线路数量"
     },
     "STATUS": {
       "UI_RUNNING": "new-api-sync 界面运行于 http://localhost:{port}"
@@ -677,6 +681,20 @@
     "FINGERPRINT": {
       "PULL_FAILED": "[指纹] {store}：拉取失败，使用本地账本（{error}）",
       "PUSH_FAILED": "[指纹] {store}：推送失败，已保留本地账本（{error}）"
+    },
+    "LANE_GRADER": {
+      "SUMMARY": "[lane-grader] {mode}：评估 {graded} 条线路，标记 {flagged} 条，隔离 {quarantined} 条，因安全限制保留 {held} 条，解除隔离 {released} 条，黑名单候选 {candidates} 条",
+      "QUARANTINED": "[lane-grader] 已隔离 {channel} {hours} 小时（第 {strike} 次）：{reason}",
+      "WOULD_QUARANTINE": "[lane-grader] 演练模式，本应隔离 {channel} {hours} 小时（第 {strike} 次）：{reason}",
+      "QUARANTINE_FAILED": "[lane-grader] 无法隔离 {channel}：网关更新失败",
+      "HELD": "[lane-grader] {channel} 虽有 {reason}，但受安全限制保持启用（该模型有 {live} 条启用线路）",
+      "RELEASED": "[lane-grader] 已解除 {channel} 的隔离",
+      "RELEASE_FAILED": "[lane-grader] 无法解除 {channel} 的隔离：网关更新失败，下一轮重试",
+      "CANDIDATE": "[lane-grader] {channel} 在计数窗口内已被隔离 {strikes} 次：黑名单候选",
+      "ROLLUP_WRITTEN": "[lane-grader] 已写入 {day} 的每日汇总：{lanes} 条线路",
+      "SKIPPED": "[lane-grader] 本轮跳过：{reason}",
+      "REPORT_NONE": "[lane-grader] {day} 没有汇总",
+      "REPORT_NEEDS_CONFIG": "lane-report --live 需要配置中的 targetDb 和 laneGrader"
     }
   }
 }

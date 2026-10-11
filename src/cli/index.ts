@@ -9,6 +9,11 @@ import { fetchAllPricingSources } from "@core/pricing/resolver";
 import { resolveCanonicalByVote } from "@core/pricing/vote";
 import { checkBalances, printBalanceSummary } from "@core/sync/balance";
 import { printReconcileSummary, runReconcile } from "@core/sync/reconcile/run";
+import {
+  liveLaneReport,
+  printLaneReport,
+  rollupLaneReport,
+} from "@core/quality/lane-report";
 import { printMetadataSummary, runMetadataSync } from "@core/sync/metadata";
 import { runReset } from "@core/sync/reset";
 import { printResetSummary, printRunSummary, runSync } from "@core/sync/run";
@@ -218,18 +223,52 @@ program
   .option("-c, --config <path>", t("CLI.OPTION.CONFIG_PATH"))
   .option("--model <glob>", t("CLI.OPTION.FINGERPRINT_MODEL"))
   .option("--json", t("CLI.OPTION.RECONCILE_JSON"))
-  .action(async (options: { config?: string; model?: string; json?: boolean }) => {
-    const config = await loadConfig(options.config);
-    const store = config.verdictStore
-      ? new VerdictStore(config.verdictStore)
-      : undefined;
-    setAnswerFingerprintOptions(config.authenticity?.answerFingerprint);
-    await loadAnswerFingerprints(store);
-    const summary = judgeAllLanes(sourceOfFor(config));
-    saveAnswerFingerprints(summary);
-    if (options.json) console.log(JSON.stringify(summary, null, 2));
-    else printFingerprintSummary(summary, options.model);
-  });
+  .action(
+    async (options: { config?: string; model?: string; json?: boolean }) => {
+      const config = await loadConfig(options.config);
+      const store = config.verdictStore
+        ? new VerdictStore(config.verdictStore)
+        : undefined;
+      setAnswerFingerprintOptions(config.authenticity?.answerFingerprint);
+      await loadAnswerFingerprints(store);
+      const summary = judgeAllLanes(sourceOfFor(config));
+      saveAnswerFingerprints(summary);
+      if (options.json) console.log(JSON.stringify(summary, null, 2));
+      else printFingerprintSummary(summary, options.model);
+    },
+  );
+
+program
+  .command("lane-report")
+  .description(t("CLI.COMMAND.LANE_REPORT_DESC"))
+  .option("-c, --config <path>", t("CLI.OPTION.CONFIG_PATH"))
+  .option("--day <day>", t("CLI.OPTION.LANE_DAY"))
+  .option("--live", t("CLI.OPTION.LANE_LIVE"))
+  .option("--limit <n>", t("CLI.OPTION.LANE_LIMIT"), "30")
+  .option("--json", t("CLI.OPTION.RECONCILE_JSON"))
+  .action(
+    async (options: {
+      config?: string;
+      day?: string;
+      live?: boolean;
+      limit: string;
+      json?: boolean;
+    }) => {
+      const config = await loadConfig(options.config);
+      const yesterday = new Date(Date.now() - 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      const report = options.live
+        ? await liveLaneReport(config)
+        : await rollupLaneReport(
+            config,
+            options.day ?? yesterday,
+            Number(options.limit),
+          );
+      if (options.json) console.log(JSON.stringify(report, null, 2));
+      else printLaneReport(report);
+    },
+  );
 
 program
   .command("ui")

@@ -16,7 +16,23 @@ bun sync reset                    # delete all synced data
 bun sync balance [--json]
 bun sync reconcile [--only p] [--since 24h | --from 2026-08-26 --to now] [--json]   # upstream usage logs vs our logs, exit 1 on unaccounted usage
 bun sync fingerprints [--model glob] [--json]   # answer fingerprint ledger: trusted profiles per family, every lane with divergence, identity mix, wrapper size, style class
+bun sync lane-report [--day 2026-10-11] [--live] [--json]   # lane grader: a day's per-lane traffic rollup, or the current window judged without acting
 ```
+
+Lane grader (`src/core/quality/`, config `laneGrader`, needs `targetDb`): every metadata tick, after
+reverify, it reads the last `windowHours` (6) of each live lane in `providers` from the gateway's
+request log and compares it against every other lane of the same model in the same window. A lane
+with enough traffic (20 requests, 3 users) and clearly worse empty successes (8%, 3x peers), short
+answers to long prompts (15%, 2x) or errors without 429s (30%, 2x plus 10 points) is set to status 2
+for `quarantineHours` (4), doubling per strike up to 24, and released by the grader itself when it
+expires; status 2 because the gateway's tester re-enables status 3 on its first harmless pass. It
+never takes out more than a third of a model's live lanes or leaves fewer than 2, at most 10 per
+tick. Three strikes in 7 days logs a blacklist candidate; nothing is blacklisted automatically.
+`dryRun` (the default) logs `would-quarantine` and changes nothing. Ledger: store
+`lane-quarantine.json`; decisions: `lane-grader/<day>.jsonl`; the first tick of a UTC day writes
+yesterday's per-lane rollup to `lane-stats/<day>.jsonl` with the observe log's lane key, which is
+what a new verifier rule is checked against. Thresholds come from replaying a week of marketplace
+traffic: 54 of 66 bad lanes caught, half within 4 hours. Probe verdicts caught none of them.
 
 `reconcile` (`src/core/sync/reconcile/`) pulls every relay account's own `/api/log/self` (100 rows
 a page, one page at a time per account, 750 ms apart, 429 backs off up to 80 s; every page is

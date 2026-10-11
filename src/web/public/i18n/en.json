@@ -241,7 +241,8 @@
       "METADATA_DESC": "re-seed model metadata (release date, params, context, description) on existing models; no probing/testing, no channel or pricing changes",
       "BALANCE_DESC": "check the target and every configured provider's remaining balance; read-only, no probing or writes",
       "RECONCILE_DESC": "match every upstream provider's own usage log against our gateway logs for a window; lists usage that never came through us and foreign tokens; read-only",
-      "FINGERPRINTS_DESC": "print the answer fingerprint summary: per model family the trusted profiles, then every lane with its divergence, identity mix, wrapper size and style class; read-only"
+      "FINGERPRINTS_DESC": "print the answer fingerprint summary: per model family the trusted profiles, then every lane with its divergence, identity mix, wrapper size and style class; read-only",
+      "LANE_REPORT_DESC": "Lane grader: a day's per-lane traffic rollup, or the current window judged without acting (--live)"
     },
     "OPTION": {
       "CONFIG_PATH": "config file path",
@@ -257,7 +258,10 @@
       "RECONCILE_JSON": "print the result as JSON instead of a summary",
       "FROM": "window start: ISO date, ISO datetime or unix seconds (overrides --since)",
       "TO": "window end, same forms or \"now\" (default now)",
-      "FINGERPRINT_MODEL": "only families matching this glob"
+      "FINGERPRINT_MODEL": "only families matching this glob",
+      "LANE_DAY": "UTC day of the rollup (default yesterday)",
+      "LANE_LIVE": "Judge the current window now, change nothing",
+      "LANE_LIMIT": "Lanes to print"
     },
     "STATUS": {
       "UI_RUNNING": "new-api-sync UI running at http://localhost:{port}"
@@ -677,6 +681,20 @@
     "FINGERPRINT": {
       "PULL_FAILED": "[fingerprints] {store}: pull failed, running on the local ledger ({error})",
       "PUSH_FAILED": "[fingerprints] {store}: push failed, local ledger kept ({error})"
+    },
+    "LANE_GRADER": {
+      "SUMMARY": "[lane-grader] {mode}: {graded} lane(s) graded, {flagged} flagged, {quarantined} quarantined, {held} held by the safety limits, {released} released, {candidates} blacklist candidate(s)",
+      "QUARANTINED": "[lane-grader] quarantined {channel} for {hours}h (strike {strike}): {reason}",
+      "WOULD_QUARANTINE": "[lane-grader] dry run, would quarantine {channel} for {hours}h (strike {strike}): {reason}",
+      "QUARANTINE_FAILED": "[lane-grader] could not quarantine {channel}: the gateway update failed",
+      "HELD": "[lane-grader] kept {channel} live despite {reason}: the safety limits hold it ({live} live lane(s) for the model)",
+      "RELEASED": "[lane-grader] released {channel} from quarantine",
+      "RELEASE_FAILED": "[lane-grader] could not release {channel}: the gateway update failed, retrying next tick",
+      "CANDIDATE": "[lane-grader] {channel} has {strikes} quarantines inside the strike window: blacklist candidate",
+      "ROLLUP_WRITTEN": "[lane-grader] daily rollup for {day} written: {lanes} lane(s)",
+      "SKIPPED": "[lane-grader] skipped this tick: {reason}",
+      "REPORT_NONE": "[lane-grader] no rollup for {day}",
+      "REPORT_NEEDS_CONFIG": "lane-report --live needs targetDb and laneGrader in the config"
     }
   }
 }
