@@ -395,6 +395,9 @@ export async function processOpenAICompatibleFreeProvider(
           modality.modelType === "embedding" ? false : opts.acceptRateLimited,
         skipAuthenticity: opts.skipAuthenticity,
         capabilities: buildCapabilityMap(models, mapExposed, ctx),
+        ...(providerConfig.probeBody
+          ? { extraBody: providerConfig.probeBody }
+          : {}),
       });
       const working = r.workingModels;
       if (working.length === 0) continue;
