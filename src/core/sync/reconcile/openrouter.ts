@@ -28,10 +28,7 @@ export async function checkOpenRouterKeys(
     out.status = "no-management-key";
     return out;
   }
-  const base = (provider.baseUrl ?? "https://openrouter.ai/api").replace(
-    /\/$/,
-    "",
-  );
+  const base = provider.baseUrl.replace(/\/$/, "");
   try {
     const keys: RemoteKey[] = [];
     for (let offset = 0; ; offset += PAGE) {

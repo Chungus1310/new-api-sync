@@ -7,9 +7,7 @@ import {
   type ConfigSchemaType,
   type EnabledModelEntry,
   type GlobalConfigType,
-  type SimpleFreeProviderConfig,
 } from "@core/validations/config";
-import { SIMPLE_PROVIDER_META_MAP } from "@core/vendors/registry-meta";
 import { t } from "@server/i18n";
 import { type TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
@@ -213,28 +211,9 @@ export async function loadConfig(path?: string): Promise<RuntimeConfig> {
     );
 
   const providers = typed.providers.map((p) => {
-    if (p.type === "nvidia")
-      return {
-        ...p,
-        baseUrl: p.baseUrl ?? "https://integrate.api.nvidia.com",
-        imageBaseUrl: p.imageBaseUrl ?? "https://ai.api.nvidia.com",
-        ratio: p.ratio ?? 1,
-      };
-    if (p.type === "openrouter")
-      return {
-        ...p,
-        baseUrl: p.baseUrl ?? "https://openrouter.ai/api",
-        ratio: p.ratio ?? 0,
-      };
-    const simple = SIMPLE_PROVIDER_META_MAP[p.type];
-    if (simple) {
-      const sp = p as SimpleFreeProviderConfig;
-      return {
-        ...sp,
-        baseUrl: sp.baseUrl ?? simple.defaultBaseUrl,
-        ratio: sp.ratio ?? simple.defaultRatio,
-      };
-    }
+    if (p.type === "nvidia") return { ...p, ratio: p.ratio ?? 1 };
+    if (p.type === "openrouter" || p.type === "openai-compatible")
+      return { ...p, ratio: p.ratio ?? 0 };
     return p;
   }) as AnyProviderConfig[];
 

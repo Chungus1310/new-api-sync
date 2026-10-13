@@ -1,5 +1,4 @@
 import type { ConfigSchemaType } from "@core/validations/config";
-import { SIMPLE_PROVIDER_META } from "@core/vendors/registry-meta";
 import { ProviderCard } from "../providers/provider-card";
 import { useTranslations } from "use-intl";
 import { Button } from "@web/components/ui/button";
@@ -23,7 +22,7 @@ import { useFieldArray, useFormContext } from "react-hook-form";
 type Provider = ConfigSchemaType["providers"][number];
 type ProviderType = Provider["type"];
 
-// Bespoke provider templates; simple registry providers share the {type,name,apiKey} shape.
+// Every provider type starts from a template; URLs are always typed in by hand.
 const BESPOKE_TEMPLATES: Partial<Record<ProviderType, () => Provider>> = {
   newapi: () => ({
     type: "newapi",
@@ -32,14 +31,26 @@ const BESPOKE_TEMPLATES: Partial<Record<ProviderType, () => Provider>> = {
     systemAccessToken: "",
     userId: 1,
   }),
-  nvidia: () => ({ type: "nvidia", name: "", apiKey: "" }),
-  openrouter: () => ({ type: "openrouter", name: "", apiKey: "" }),
+  nvidia: () => ({
+    type: "nvidia",
+    name: "",
+    apiKey: "",
+    baseUrl: "",
+    imageBaseUrl: "",
+  }),
+  openrouter: () => ({ type: "openrouter", name: "", apiKey: "", baseUrl: "" }),
+  "openai-compatible": () => ({
+    type: "openai-compatible",
+    name: "",
+    apiKey: "",
+    baseUrl: "",
+  }),
   comfyui: () => ({
     type: "comfyui",
     name: "",
     apiKey: "",
     provider: "runpod",
-    baseUrl: "https://redacted.invalid",
+    baseUrl: "",
     templates: {},
   }),
 };
@@ -50,12 +61,11 @@ function templateFor(type: ProviderType): Provider {
   return { type, name: "", apiKey: "" } as Provider;
 }
 
-const SIMPLE_KINDS = SIMPLE_PROVIDER_META.map((m) => m.kind);
 const TYPE_ORDER: ProviderType[] = [
   "newapi",
   "nvidia",
   "openrouter",
-  ...SIMPLE_KINDS,
+  "openai-compatible",
   "comfyui",
 ] as ProviderType[];
 

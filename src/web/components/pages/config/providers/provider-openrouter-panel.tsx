@@ -17,15 +17,7 @@ export function ProviderOpenRouterPanel(props: { index: number }) {
         control={form.control}
         name={providerPath(props.index, "baseUrl")}
         schema={variantSchema}
-        label={
-          <>
-            {t("CONFIG.PROVIDER.BASE_URL")}
-            <span className="text-muted-foreground ml-1 text-xs font-normal">
-              ({t("CONFIG.FIELD.OPTIONAL")})
-            </span>
-          </>
-        }
-        placeholder="https://openrouter.ai/api"
+        label={t("CONFIG.PROVIDER.BASE_URL")}
       />
       <MyFormInput
         control={form.control}

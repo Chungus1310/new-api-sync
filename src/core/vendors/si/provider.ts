@@ -15,7 +15,6 @@ import type { ModelTestDetail } from "@core/testing/types";
 import type { ProviderReport } from "@core/types";
 import type { SiProviderConfig } from "@core/validations/config";
 import { resolvePerModel } from "@core/pricing";
-import { SIMPLE_PROVIDER_META_MAP } from "@core/vendors/registry-meta";
 import {
   buildFallbackOffer,
   DEFAULT_MIN_SELLERS,
@@ -49,9 +48,15 @@ const BOOK_CONCURRENCY = 3;
 // Google's sellers answer 400 "Unknown name top_k" like our own Gemini lanes, and
 // RP clients send those fields by default, so a pin reaching them strips the same set.
 const GOOGLE_SELLER_PINS = new Set(["google-ai-studio", "google-vertex"]);
-const GOOGLE_STRIP_OPERATIONS: Record<string, unknown>[] = JSON.parse(
-  SIMPLE_PROVIDER_META_MAP.gemini?.paramOverride ?? '{"operations":[]}',
-).operations;
+const GOOGLE_STRIP_OPERATIONS: Record<string, unknown>[] = [
+  "top_k",
+  "frequency_penalty",
+  "repetition_penalty",
+  "min_p",
+  "top_a",
+  "reasoning",
+  "logit_bias",
+].map((path) => ({ path, mode: "delete" }));
 
 function sellerPin(
   offer: BookOffer,

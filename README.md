@@ -91,9 +91,9 @@ fork accepts a scoped sync service token instead; see "Works with upstream new-a
 | `priceAdjustment`        |          | Number or per-key object (see Price Adjustment below)   |
 | `perUpstreamConcurrency` |          | Override the global per-upstream concurrency cap        |
 
-### Free providers
+### OpenAI-compatible Provider (`type: "openai-compatible"`)
 
-The sync is built to put every free model in one place. Beyond the reference integrations documented below (new-api, OpenRouter, NVIDIA NIM), `src/core/vendors/` holds about 125 provider integrations: official free tiers (Cloudflare Workers AI, Gemini, Mistral, Z.ai, ModelScope, Cohere, Groq and others), open-model hosts and routers, community networks (Gonka, AI Horde), and adapters for free web products. Each free model is probed end to end (HTTP, streaming, tool calls, authenticity) before it is published, and models that several providers serve are collapsed into one name with automatic failover between them. On UnoRouter that is currently 130+ free models from about 50 live providers; OpenRouter and NVIDIA NIM account for about 20 of them.
+Any OpenAI-compatible upstream is a `type: "openai-compatible"` provider. The code holds no URL, name or rule for any of them: `baseUrl` is required, `label` names the channel remark, and a `discovery` block says how the model list is read (path or url, auth header, id field, include/exclude regexes, field filters such as `where: { "pricing.free": true }`, price fields, a static `models` list). See `config.example.yml`. Each model is probed end to end (HTTP, streaming, tool calls, authenticity) before it is published, and models that several providers serve are collapsed into one name with automatic failover between them.
 
 ### OpenRouter Provider (`type: "openrouter"`)
 
@@ -104,7 +104,7 @@ Pulls from [OpenRouter](https://openrouter.ai/). Free models (`prompt=0` and `co
 | `name`                   | yes      | Unique identifier, used as channel tag                                 |
 | `managementKey`          | one of   | Management key: mints one capped, guardrail-pinned key per model, used for the probe and the channel |
 | `apiKey`                 | one of   | Inference key, only for a provider without a management key (shared by every channel) |
-| `baseUrl`                |          | Defaults to `https://openrouter.ai/api`                                |
+| `baseUrl`                | yes      | API root                                                               |
 | `models`                 |          | Explicit model IDs (e.g. `moonshotai/kimi-k2.6:free`); skips discovery |
 | `enabledVendors`         |          | Filter discovered models by vendor prefix (`anthropic`, `openai`, ...) |
 | `enabledModels`          |          | Glob patterns. Bare IDs (no `*`) are also added to the candidate set   |
@@ -121,8 +121,8 @@ Pulls from [NVIDIA NIM](https://build.nvidia.com/). Text models are emitted as a
 | ------------------------ | -------- | ----------------------------------------------------------------- |
 | `name`                   | yes      | Unique identifier, used as channel tag                            |
 | `apiKey`                 | yes      | NVIDIA API key                                                    |
-| `baseUrl`                |          | Defaults to `https://integrate.api.nvidia.com`                    |
-| `imageBaseUrl`           |          | Defaults to `https://ai.api.nvidia.com`                           |
+| `baseUrl`                | yes      | Chat API root                                                     |
+| `imageBaseUrl`           | yes      | Image API root                                                    |
 | `models`                 |          | Explicit model IDs; skips auto-discovery                          |
 | `enabledVendors`         |          | Filter by inferred vendor                                         |
 | `enabledModels`          |          | Glob patterns. Bare image-model IDs (no `*`) are added to the set |

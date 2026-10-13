@@ -4,10 +4,6 @@ import {
   type Static,
   type TSchema,
 } from "@sinclair/typebox";
-import {
-  SIMPLE_PROVIDER_META,
-  type SimpleProviderKind,
-} from "@core/vendors/registry-meta";
 
 FormatRegistry.Set("uri", (value: string) => {
   try {
@@ -86,24 +82,44 @@ const IhProviderSchema = T.Object({ type: T.Literal("ih"), ...ProviderCommonProp
 // URLs live in config only.
 const SiProviderSchema = T.Object({ type: T.Literal("si"), ...ProviderCommonProps, apiKey: str, baseUrl: uri, providers: PoolAllowlistSchema, profitMultiple: Opt(ProfitMultipleSchema), maxSellFraction: Opt(MaxSellFractionSchema), minSellFraction: Opt(MinSellFractionSchema), minSellers: Opt(MinSellersSchema), acceptRateLimited: Opt(T.Boolean()) });
 // prettier-ignore
-const NvidiaProviderSchema = T.Object({ type: T.Literal("nvidia"), ...ProviderCommonProps, baseUrl: Opt(uri), imageBaseUrl: Opt(uri), apiKey: str, models: Opt(T.Array(str)), ratio: Opt(T.Number({ exclusiveMinimum: 0 })), acceptRateLimited: Opt(T.Boolean()) });
+const NvidiaProviderSchema = T.Object({ type: T.Literal("nvidia"), ...ProviderCommonProps, baseUrl: uri, imageBaseUrl: uri, apiKey: str, models: Opt(T.Array(str)), ratio: Opt(T.Number({ exclusiveMinimum: 0 })), acceptRateLimited: Opt(T.Boolean()) });
 // prettier-ignore
-const OpenRouterProviderSchema = T.Object({ type: T.Literal("openrouter"), ...ProviderCommonProps, baseUrl: Opt(uri), apiKey: Opt(str), models: Opt(T.Array(str)), ratio: Opt(T.Number({ minimum: 0 })), acceptRateLimited: Opt(T.Boolean()), hostsPerModel: Opt(T.Record(T.String(), T.Integer({ minimum: 1 }))), allowQuantizations: Opt(T.Record(T.String(), T.Array(T.String()))), managementKey: Opt(str), keyDailyLimitUsd: Opt(T.Union([T.Number({ minimum: 0 }), T.Record(T.String(), T.Number({ minimum: 0 }))])), keyExpiryDays: Opt(T.Integer({ minimum: 1 })), requireKeyStore: Opt(T.Boolean()) });
-// Simple OpenAI-compatible free providers (groq, gemini, cerebras, ...). One schema,
-// `type` is the union of registry kinds so a new provider needs no schema edit here.
-// T.Unsafe carries the SimpleProviderKind literal union at the type level while the
-// runtime T.Union(...) validates the actual kind strings (map() would widen each
-// literal to the whole union, so the static type comes from T.Unsafe, not the map).
-const SimpleProviderKindSchema = T.Unsafe<SimpleProviderKind>(
-  T.Union(SIMPLE_PROVIDER_META.map((m) => T.Literal(m.kind))),
-);
-const SimpleFreeProviderSchema = T.Object({
-  type: SimpleProviderKindSchema,
+const OpenRouterProviderSchema = T.Object({ type: T.Literal("openrouter"), ...ProviderCommonProps, baseUrl: uri, apiKey: Opt(str), models: Opt(T.Array(str)), ratio: Opt(T.Number({ minimum: 0 })), acceptRateLimited: Opt(T.Boolean()), hostsPerModel: Opt(T.Record(T.String(), T.Integer({ minimum: 1 }))), allowQuantizations: Opt(T.Record(T.String(), T.Array(T.String()))), managementKey: Opt(str), keyDailyLimitUsd: Opt(T.Union([T.Number({ minimum: 0 }), T.Record(T.String(), T.Number({ minimum: 0 }))])), keyExpiryDays: Opt(T.Integer({ minimum: 1 })), requireKeyStore: Opt(T.Boolean()) });
+// The model list an OpenAI-compatible upstream publishes, read with no code per
+// upstream. A row is kept when the top-level include/exclude pass and any one
+// filter passes (no filters keeps every row); paths are dotted and descend into
+// arrays, and a rule value of null also matches a missing field.
+// prettier-ignore
+const DiscoveryFilterSchema = T.Object({ include: Opt(str), exclude: Opt(str), where: Opt(T.Record(str, T.Unknown())), whereNot: Opt(T.Record(str, T.Unknown())), free: Opt(T.Object({ prompt: Opt(str), completion: Opt(str) })) });
+// prettier-ignore
+const DiscoveryTaskSchema = T.Object({ type: Opt(ModelTypeEnum), exclude: Opt(str) });
+// prettier-ignore
+const DiscoverySchema = T.Object({ mode: Opt(T.Union([T.Literal("list"), T.Literal("free-groups"), T.Literal("task-catalog")])), url: Opt(uri), path: Opt(str), authHeader: Opt(str), headers: Opt(T.Record(str, str)), timeoutMs: Opt(T.Integer({ minimum: 1000 })), listField: Opt(str), idField: Opt(T.Union([str, T.Array(str)])), idStripPrefix: Opt(str), ignoreCase: Opt(T.Boolean()), include: Opt(str), exclude: Opt(str), filters: Opt(T.Array(DiscoveryFilterSchema)), maxOutputField: Opt(T.Union([str, T.Array(str)])), pricing: Opt(T.Object({ prompt: Opt(str), completion: Opt(str) })), probeOutputCap: Opt(T.Boolean()), models: Opt(T.Array(str)), modelType: Opt(ModelTypeEnum), tasks: Opt(T.Record(str, DiscoveryTaskSchema)) });
+export type DiscoveryConfig = Static<typeof DiscoverySchema>;
+export type DiscoveryFilter = Static<typeof DiscoveryFilterSchema>;
+
+// Any OpenAI-compatible upstream. Everything that identifies it (URL, label,
+// discovery rules, parameter quirks) lives in config.yml, never in code.
+const OpenAICompatibleProviderSchema = T.Object({
+  type: T.Literal("openai-compatible"),
   ...ProviderCommonProps,
-  baseUrl: Opt(uri),
+  baseUrl: uri,
   apiKey: str,
+  // Channel remark ("<label> via <name>"); the provider name when absent.
+  label: Opt(str),
+  discovery: Opt(DiscoverySchema),
   models: Opt(T.Array(str)),
   ratio: Opt(T.Number({ minimum: 0 })),
+  // new-api channel types: text lanes default to OpenAI (1); image, audio and video
+  // models are emitted only when their type is set.
+  channelType: Opt(T.Integer({ minimum: 1 })),
+  imageChannelType: Opt(T.Integer({ minimum: 1 })),
+  audioChannelType: Opt(T.Integer({ minimum: 1 })),
+  videoChannelType: Opt(T.Integer({ minimum: 1 })),
+  // param_override applied to every channel of this provider (fields the upstream rejects).
+  paramOverride: Opt(T.Record(str, T.Unknown())),
+  // The maker's own route, named after the answer-fingerprint profile it anchors.
+  official: Opt(str),
   // Models (glob patterns) priced instead of forced-free: retail sits
   // priceAdjustment of the way from the cheapest lane to canonical (adj=1 -> 1x).
   // Everything else stays $0.
@@ -167,7 +183,7 @@ const AIHordeModelSchema = T.Object({ price: T.Number({ minimum: 0 }), hordeMode
 const AIHordeProviderSchema = T.Object({
   type: T.Literal("aihorde"),
   ...ProviderCommonProps,
-  baseUrl: Opt(uri),
+  baseUrl: uri,
   apiKey: str,
   channelName: Opt(str),
   channelTag: Opt(str),
@@ -182,7 +198,7 @@ const RunwareModelSchema = T.Object({ price: T.Number({ minimum: 0 }), air: str,
 const RunwareProviderSchema = T.Object({
   type: T.Literal("runware"),
   ...ProviderCommonProps,
-  baseUrl: Opt(uri),
+  baseUrl: uri,
   apiKey: str,
   channelName: Opt(str),
   channelTag: Opt(str),
@@ -197,7 +213,7 @@ const TypeSafeModelSchema = T.Object({ upstream: Opt(str), inputPricePerM: T.Num
 const TypeSafeProviderSchema = T.Object({
   type: T.Literal("typesafe"),
   ...ProviderCommonProps,
-  baseUrl: Opt(uri),
+  baseUrl: uri,
   decisionsPath: Opt(str),
   apiKey: str,
   channelName: Opt(str),
@@ -206,7 +222,7 @@ const TypeSafeProviderSchema = T.Object({
 });
 
 // prettier-ignore
-const AnyProviderSchema = T.Union([NewApiProviderSchema, A7ProviderSchema, IhProviderSchema, SiProviderSchema, NvidiaProviderSchema, OpenRouterProviderSchema, SimpleFreeProviderSchema, ComfyUiProviderSchema, AIHordeProviderSchema, RunwareProviderSchema, TypeSafeProviderSchema]);
+const AnyProviderSchema = T.Union([NewApiProviderSchema, A7ProviderSchema, IhProviderSchema, SiProviderSchema, NvidiaProviderSchema, OpenRouterProviderSchema, OpenAICompatibleProviderSchema, ComfyUiProviderSchema, AIHordeProviderSchema, RunwareProviderSchema, TypeSafeProviderSchema]);
 
 export type ProviderConfig = Static<typeof NewApiProviderSchema>;
 export type A7ProviderConfig = Static<typeof A7ProviderSchema>;
@@ -223,19 +239,15 @@ export type OpenRouterProviderConfig = Static<
   baseUrl: string;
   ratio: number;
 };
-export type SimpleFreeProviderConfig = Static<
-  typeof SimpleFreeProviderSchema
-> & {
-  type: SimpleProviderKind;
-  baseUrl: string;
-  ratio: number;
-};
+export type OpenAICompatibleProviderConfig = Static<
+  typeof OpenAICompatibleProviderSchema
+> & { ratio: number };
 export type ComfyUiProviderConfig = Static<typeof ComfyUiProviderSchema>;
 export type AIHordeProviderConfig = Static<typeof AIHordeProviderSchema>;
 export type RunwareProviderConfig = Static<typeof RunwareProviderSchema>;
 export type TypeSafeProviderConfig = Static<typeof TypeSafeProviderSchema>;
 // prettier-ignore
-export type AnyProviderConfig = ProviderConfig | A7ProviderConfig | IhProviderConfig | SiProviderConfig | NvidiaProviderConfig | OpenRouterProviderConfig | SimpleFreeProviderConfig | ComfyUiProviderConfig | AIHordeProviderConfig | RunwareProviderConfig | TypeSafeProviderConfig;
+export type AnyProviderConfig = ProviderConfig | A7ProviderConfig | IhProviderConfig | SiProviderConfig | NvidiaProviderConfig | OpenRouterProviderConfig | OpenAICompatibleProviderConfig | ComfyUiProviderConfig | AIHordeProviderConfig | RunwareProviderConfig | TypeSafeProviderConfig;
 export type EnabledModelEntry = Static<typeof EnabledModelEntrySchema>;
 
 const LocaleEnum = T.Union([T.Literal("en"), T.Literal("zh")]);

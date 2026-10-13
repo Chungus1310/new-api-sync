@@ -8,7 +8,6 @@ import { sanitizeGroupName } from "@core/catalog/constants/patterns";
 import type { Channel, ProviderReport } from "@core/types";
 import type { TypeSafeProviderConfig } from "@core/validations/config";
 
-export const TYPESAFE_DEFAULT_BASE_URL = "https://openrouter.ai";
 export const TYPESAFE_DEFAULT_DECISIONS_PATH = "/api/alpha/decisions";
 
 export function buildTypeSafeChannels(providerConfig: TypeSafeProviderConfig): {
@@ -29,10 +28,7 @@ export function buildTypeSafeChannels(providerConfig: TypeSafeProviderConfig): {
     return { channels: [], report };
   }
 
-  const baseUrl = (providerConfig.baseUrl ?? TYPESAFE_DEFAULT_BASE_URL).replace(
-    /\/$/,
-    "",
-  );
+  const baseUrl = providerConfig.baseUrl.replace(/\/$/, "");
   const channelName =
     providerConfig.channelName ?? sanitizeGroupName(providerConfig.name);
   const tag = providerConfig.channelTag ?? providerConfig.name;

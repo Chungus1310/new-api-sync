@@ -92,9 +92,10 @@ providers:
     priceAdjustment: -0.67
 
   # TypeSafe Jev, a decisions model: serves only POST /v1/decisions, never chat.
-  # Reached through OpenRouter's alpha route; prices are the SELL price per 1M tokens.
+  # Prices are the SELL price per 1M tokens.
   # - type: typesafe
   #   name: jev1
+  #   baseUrl: https://decisions.example.invalid
   #   apiKey: sk-or-v1-...
   #   models:
   #     jev-1.13: { upstream: typesafe/jev-1.13, inputPricePerM: 0.084, outputPricePerM: 0, contextWindow: 32000, releaseDate: "2026-09-18" }
@@ -102,25 +103,45 @@ providers:
   # disabled providers (uncomment to enable)
   # - type: openrouter
   #   name: openrouter
+  #   baseUrl: https://router.example.invalid/api
   #   managementKey: sk-or-v1-...   # mints one capped key per model; apiKey only without it
   # - type: nvidia
   #   name: nvidia-nim
+  #   baseUrl: https://nim.example.invalid
+  #   imageBaseUrl: https://nim-images.example.invalid
   #   apiKey: nvapi-...
   # Free providers with tight RPM/daily caps set acceptRateLimited so a 429 during
   # probing keeps the model (capacity throttle, not breakage). It is emitted disabled
   # and new-api's auto-test re-enables it once the limit clears. Only set this where a
   # 429 means "quota spent", never "model broken".
-  # - type: cloudflare
-  #   name: cf1
-  #   apiKey: cf-...
+  # Any OpenAI-compatible upstream. Everything that identifies it lives here, never
+  # in code: the URL, the label (channel remark), and how its model list is read.
+  # discovery: path (default /v1/models) or url, authHeader (default Bearer),
+  # headers, listField, idField, idStripPrefix, include/exclude (regex on the id,
+  # ignoreCase), filters (any one must pass: include, exclude, where, whereNot,
+  # free), maxOutputField, pricing, models (static list), modelType,
+  # probeOutputCap, timeoutMs; mode free-groups or task-catalog for the two
+  # catalog shapes that are not a model list.
+  # - type: openai-compatible
+  #   name: free1
+  #   baseUrl: https://free.example.invalid
+  #   apiKey: sk-...
+  #   label: Example Free
   #   acceptRateLimited: true
-  # Paid relays with a per-minute request cap (fish: 80/min) get perUpstreamRpm:
+  #   discovery:
+  #     include: ":free$"
+  #     filters:
+  #       - where: { "pricing.free": true }
+  #       - free: { prompt: pricing.prompt, completion: pricing.completion }
+  #     maxOutputField: [max_output_tokens, context_length]
+  #   paramOverride: { operations: [{ path: top_k, mode: delete }] }
+  # Paid relays with a per-minute request cap (80/min here) get perUpstreamRpm:
   # every probe request to that host (model test, authenticity, verifier) is spaced
   # so no more than that many start per minute, leaving headroom for live traffic.
   # acceptRateLimited alone does not help there: a throttled Claude lane is only kept
   # while its authenticity pass is fresh, so an unpaced run deletes the older ones.
   # - type: newapi
-  #   name: fish
+  #   name: relay1
   #   perUpstreamConcurrency: 2
   #   perUpstreamRpm: 60
   # authenticityPassTtlHours shortens the 12 hour default for one upstream: a

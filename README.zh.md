@@ -96,7 +96,7 @@ new-api-sync-windows-x64.exe ui  # Windows
 | ------------------------ | ---- | ----------------------------------------------------------- |
 | `name`                   | 是   | 唯一标识符，用作渠道标签                                    |
 | `apiKey`                 | 是   | OpenRouter API 密钥                                         |
-| `baseUrl`                |      | 默认 `https://openrouter.ai/api`                            |
+| `baseUrl`                | 是   | API 根地址                                                  |
 | `models`                 |      | 显式模型 ID（如 `moonshotai/kimi-k2.6:free`），跳过自动发现 |
 | `enabledVendors`         |      | 按 ID 前缀筛选厂商（`anthropic`、`openai` 等）              |
 | `enabledModels`          |      | Glob 模式。无通配的纯 ID 也会加入候选集                     |
@@ -104,6 +104,10 @@ new-api-sync-windows-x64.exe ui  # Windows
 | `testModelTypes`         |      | 覆盖全局测试类型                                            |
 | `priceAdjustment`        |      | 数字或按键对象（见下方"价格调整"）                          |
 | `perUpstreamConcurrency` |      | 覆盖全局的单上游并发上限                                    |
+
+### OpenAI 兼容提供商 (`type: "openai-compatible"`)
+
+任何 OpenAI 兼容的上游都使用 `type: "openai-compatible"`。代码中不包含任何上游的地址、名称或规则：`baseUrl` 必填，`label` 用作渠道备注，`discovery` 块描述如何读取模型列表（路径或完整地址、认证头、ID 字段、include/exclude 正则、字段筛选如 `where: { "pricing.free": true }`、价格字段、静态 `models` 列表）。示例见 `config.example.yml`。每个模型在发布前都会端到端探测（HTTP、流式、工具调用、真伪），多个提供商提供的同一模型会合并为一个名称并自动故障转移。
 
 ### NVIDIA NIM 提供商 (`type: "nvidia"`)
 
@@ -113,8 +117,8 @@ new-api-sync-windows-x64.exe ui  # Windows
 | ------------------------ | ---- | --------------------------------------------- |
 | `name`                   | 是   | 唯一标识符，用作渠道标签                      |
 | `apiKey`                 | 是   | NVIDIA API 密钥                               |
-| `baseUrl`                |      | 默认 `https://integrate.api.nvidia.com`       |
-| `imageBaseUrl`           |      | 默认 `https://ai.api.nvidia.com`              |
+| `baseUrl`                | 是   | 对话 API 根地址                               |
+| `imageBaseUrl`           | 是   | 图像 API 根地址                               |
 | `models`                 |      | 显式模型 ID（跳过自动发现）                   |
 | `enabledVendors`         |      | 按推断厂商筛选                                |
 | `enabledModels`          |      | Glob 模式。无通配的图像模型 ID 也会加入候选集 |

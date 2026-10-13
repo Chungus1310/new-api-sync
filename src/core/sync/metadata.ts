@@ -91,7 +91,6 @@ import {
   printPricingAudit,
 } from "@core/sync/option-store";
 import { expandRateLimitModels } from "@core/sync/pipeline/option-maps";
-import { SIMPLE_PROVIDER_META_MAP } from "@core/vendors/registry-meta";
 import { acceptPriceNotices, retireUnpinnedLanes } from "@core/vendors/a7/pins";
 import { deleteChannel } from "@core/vendors/newapi/resources";
 import { MARKETPLACE_KINDS } from "@core/vendors/shared/fallback-lanes";
@@ -389,7 +388,10 @@ function buildVendorParamOverrideByProvider(
 ): { prefix: string; override: string }[] {
   const out: { prefix: string; override: string }[] = [];
   for (const provider of config.providers) {
-    const override = SIMPLE_PROVIDER_META_MAP[provider.type]?.paramOverride;
+    const override =
+      provider.type === "openai-compatible" && provider.paramOverride
+        ? JSON.stringify(provider.paramOverride)
+        : undefined;
     if (override) {
       out.push({
         prefix: `${sanitizeGroupName(provider.name)}-`,

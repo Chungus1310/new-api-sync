@@ -25,10 +25,7 @@ export function buildAIHordeChannels(providerConfig: AIHordeProviderConfig): {
     return { channels: [], report };
   }
 
-  const baseUrl = (providerConfig.baseUrl ?? "https://redacted.invalid").replace(
-    /\/$/,
-    "",
-  );
+  const baseUrl = providerConfig.baseUrl.replace(/\/$/, "");
   const channelName =
     providerConfig.channelName ?? sanitizeGroupName(providerConfig.name);
   const tag = providerConfig.channelTag ?? providerConfig.name;

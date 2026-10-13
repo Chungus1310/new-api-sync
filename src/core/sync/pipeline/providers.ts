@@ -12,7 +12,7 @@ import type {
   NvidiaProviderConfig,
   OpenRouterProviderConfig,
   ProviderConfig,
-  SimpleFreeProviderConfig,
+  OpenAICompatibleProviderConfig,
   A7ProviderConfig,
 } from "@core/validations/config";
 import { processA7Provider } from "@core/vendors/a7/provider";
@@ -21,10 +21,7 @@ import { processSiProvider } from "@core/vendors/si/provider";
 import { processNewApiProvider } from "@core/vendors/newapi/provider";
 import { processNvidiaProvider } from "@core/vendors/nvidia/provider";
 import { processOpenRouterProvider } from "@core/vendors/openrouter/provider";
-import {
-  SIMPLE_PROVIDER_MAP,
-  processSimpleProvider,
-} from "@core/vendors/registry";
+import { processOpenAICompatibleFreeProvider } from "@core/vendors/shared/openai-free-provider";
 
 // new-api bills ONE billing type per model NAME. The SAME media model is served per-token
 // (quota_type 0: ratio+completionRatio, HONORS size/quality params) by some relays and per-call flat
@@ -123,9 +120,11 @@ export async function runAllProviders(
           return processNvidiaProvider(provider, config, ctx);
         if (provider.type === "openrouter")
           return processOpenRouterProvider(provider, config, ctx);
-        const def = SIMPLE_PROVIDER_MAP[provider.type];
-        if (def) return processSimpleProvider(def, provider, config, ctx);
-        throw new Error(`unknown provider type: ${provider.type}`);
+        return processOpenAICompatibleFreeProvider({
+          providerConfig: provider,
+          config,
+          ctx,
+        });
       }),
     ),
   );

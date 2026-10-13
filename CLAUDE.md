@@ -68,8 +68,9 @@ src/cli/index.ts          run | reset | metadata | balance | reconcile | ui | ba
 src/build.ts              compiles 6 binaries; embedded-assets.ts is GENERATED (empty = dev)
 src/core/sync/            run, diff, apply, reset, metadata, option-store, pipeline/, reconcile/
 src/core/pricing/         compute, vote, resolver, emit, sources/, tiered-expr
-src/core/vendors/         one dir per provider; newapi is the reference. New free provider =
-                          discovery.ts + registry-meta.ts + registry.ts + a config.yml block
+src/core/vendors/         protocol adaptors only (a7, ih, si, newapi, openrouter, nvidia, ...);
+                          every OpenAI-compatible upstream is `type: openai-compatible` in
+                          config.yml (shared/generic-discovery.ts reads its `discovery` block)
 src/core/testing/         runner, authenticity, request-configs, verdict-cache
 src/core/catalog/ infra/  name norm + fuzzy metadata; abort, concurrency, http, lock, retry
 src/server/ src/web/      Elysia routes + SSE; React app (lib/rpc.ts, lib/react-query/keys.ts)
@@ -219,7 +220,7 @@ and pushed both CronJobs past their deadlines on 2026-09-22. Every ladder run ap
 per-lane ledger (`logs/answer-fingerprints.json`, store object
 `answer-fingerprints.json`, merged by run stamp, 60 runs or 30 days). Before every store push
 (`run.ts` finally, `metadata.ts` reverify) each lane's pooled distribution is judged against its
-family's trusted profiles: the maker's own route (`official: true` in `registry-meta.ts`: the
+family's trusted profiles: the maker's own route (`official: <profile>` on the provider in config.yml: the
 maker's API or its consumer product), one profile per known host (our shards, kl, cfp, each ih
 pool), or the largest cluster of the family when no official route carries it. Verdicts are
 `known`, `novel`, `uncertain` or `insufficient` (Jensen-Shannon in bits, 0.25 match, 0.35 mismatch,

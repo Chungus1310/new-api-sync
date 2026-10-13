@@ -20,13 +20,12 @@ import type {
   ProviderRunContext,
   UpstreamOffer,
 } from "@core/pricing/offers";
-import { NVIDIA_RETRY_POLICY, type RetryPolicy } from "@core/testing/execution";
+import { NVIDIA_RETRY_POLICY } from "@core/testing/execution";
 import { testAndFilterModels } from "@core/testing/runner";
-import type { TestExchange } from "@core/testing/types";
 import type { ModelType, ProviderReport } from "@core/types";
 import type {
   ModelMetadata,
-  SimpleFreeProviderConfig,
+  OpenAICompatibleProviderConfig,
 } from "@core/validations/config";
 import { t } from "@server/i18n";
 import { consola } from "consola";
@@ -35,6 +34,7 @@ import {
   type EffortFamily,
 } from "../newapi/effort-variants";
 import { buildCapabilityMap, passthroughExposed } from "./capability-map";
+import { discoverModels } from "./generic-discovery";
 import { partitionByVendor } from "./partition";
 
 export interface OpenAIFreeDiscovery {
@@ -53,35 +53,9 @@ export interface OpenAIFreeDiscovery {
 }
 
 export interface OpenAIFreeOpts {
-  providerConfig: SimpleFreeProviderConfig;
+  providerConfig: OpenAICompatibleProviderConfig;
   config: RuntimeConfig;
   ctx: ProviderRunContext;
-  /** offer.providerKind, e.g. "groq". */
-  providerKind: string;
-  /** brand label, channel remark becomes "<label> via <name>". */
-  channelRemarkLabel: string;
-  discover: (baseUrl: string, apiKey: string) => Promise<OpenAIFreeDiscovery>;
-  retryPolicy?: RetryPolicy<TestExchange>;
-  exposedMapper?: (config: RuntimeConfig) => (upstream: string) => string;
-  /** Channel type for testing + emitted channels. Defaults to OPENAI; Z.ai uses
-   *  ZHIPU_V4 (OpenAI body at the /v4 path). */
-  channelType?: number;
-  /** If set, image models are emitted with this channel type (native image
-   *  surface). Omit to skip image models entirely. Cloudflare = CLOUDFLARE. */
-  imageChannelType?: number;
-  /** If set, audio models (STT/TTS) are emitted with this channel type. Omit to
-   *  skip audio. Groq = OPENAI, Cloudflare = CLOUDFLARE. */
-  audioChannelType?: number;
-  /** If set, video models are emitted with this channel type. Omit to skip video.
-   *  Bailian = ALI (17) DashScope video-synthesis. */
-  videoChannelType?: number;
-  /** Keep 429-failing models as working (Cloudflare neuron-cap: 429 = free model,
-   *  budget spent, not broken). Only where 429 means capacity. */
-  acceptRateLimited?: boolean;
-  /** channel param_override JSON carried on every emitted OfferModel (kind-wide
-   *  field stripping, e.g. Gemini's OpenAI-compat rejecting top_k). */
-  paramOverride?: string;
-  skipAuthenticity?: boolean;
 }
 
 type Resolution = ReturnType<typeof resolveBareNames>[number];
@@ -228,6 +202,10 @@ export async function processOpenAICompatibleFreeProvider(
   const config = opts.config;
   const ctx = opts.ctx;
   const name = providerConfig.name;
+  const label = providerConfig.label ?? name;
+  const paramOverride = providerConfig.paramOverride
+    ? JSON.stringify(providerConfig.paramOverride)
+    : undefined;
   const report: ProviderReport = {
     name,
     success: false,
@@ -253,9 +231,11 @@ export async function processOpenAICompatibleFreeProvider(
         }),
       );
     } else {
-      const discovered = await opts.discover(
+      const discovered = await discoverModels(
         providerConfig.baseUrl,
         providerConfig.apiKey,
+        label,
+        providerConfig.discovery,
       );
       allModels = discovered.models;
       maxOutputByModel = discovered.maxOutputByModel;
@@ -284,8 +264,8 @@ export async function processOpenAICompatibleFreeProvider(
       effortFamilies = collapsed.families;
     }
 
-    const channelType = opts.channelType ?? CHANNEL_TYPES.OPENAI;
-    const mapExposed = (opts.exposedMapper ?? passthroughExposed)(config);
+    const channelType = providerConfig.channelType ?? CHANNEL_TYPES.OPENAI;
+    const mapExposed = passthroughExposed(config);
     let totalWorking = 0;
 
     // Each modality the simple OpenAI-compat surface can serve. text uses the
@@ -303,22 +283,22 @@ export async function processOpenAICompatibleFreeProvider(
         endpoints: ["embedding"],
       },
     ];
-    if (opts.imageChannelType !== undefined)
+    if (providerConfig.imageChannelType !== undefined)
       modalities.push({
         modelType: "image",
-        channelType: opts.imageChannelType,
+        channelType: providerConfig.imageChannelType,
         endpoints: ["image-generation"],
       });
-    if (opts.audioChannelType !== undefined)
+    if (providerConfig.audioChannelType !== undefined)
       modalities.push({
         modelType: "audio",
-        channelType: opts.audioChannelType,
+        channelType: providerConfig.audioChannelType,
         endpoints: ["audio"],
       });
-    if (opts.videoChannelType !== undefined)
+    if (providerConfig.videoChannelType !== undefined)
       modalities.push({
         modelType: "video",
-        channelType: opts.videoChannelType,
+        channelType: providerConfig.videoChannelType,
         endpoints: ["openai-video"],
       });
 
@@ -348,12 +328,12 @@ export async function processOpenAICompatibleFreeProvider(
             details: [],
             maxOutputByModel,
             provider: name,
-            providerKind: opts.providerKind,
+            providerKind: providerConfig.type,
             sanitizedBase: sanitizeGroupName(name),
             baseUrl: providerConfig.baseUrl,
             apiKey: providerConfig.apiKey,
             groupRatio: providerConfig.ratio,
-            channelRemark: `${opts.channelRemarkLabel} via ${name}`,
+            channelRemark: `${label} via ${name}`,
             priceAdjustment: providerConfig.priceAdjustment,
             channelType: modality.channelType,
             modelType: modality.modelType,
@@ -361,7 +341,7 @@ export async function processOpenAICompatibleFreeProvider(
             paidModels: providerConfig.paidModels,
             ratioByModel,
             completionRatioByModel,
-            paramOverride: opts.paramOverride,
+            paramOverride: paramOverride,
             publishAs: providerConfig.publishAs,
             effortFamilies,
             metadataByModel: getMetadataFromEnabledModels(
@@ -385,15 +365,17 @@ export async function processOpenAICompatibleFreeProvider(
         channelType: modality.channelType,
         providerLabel: name,
         testableModelTypes: new Set([modality.modelType]),
-        retryPolicy: opts.retryPolicy ?? NVIDIA_RETRY_POLICY,
+        retryPolicy: NVIDIA_RETRY_POLICY,
         modelEndpoints,
         // acceptRateLimited keeps 429-failing models (chat throttling = capacity,
         // not breakage). Embeddings don't get that grace: a 429 or any failure on
         // /v1/embeddings means the model doesn't actually serve embeddings (dead,
         // reranker, wrong endpoint) -> drop it, never list it.
         acceptRateLimited:
-          modality.modelType === "embedding" ? false : opts.acceptRateLimited,
-        skipAuthenticity: opts.skipAuthenticity,
+          modality.modelType === "embedding"
+            ? false
+            : (providerConfig.acceptRateLimited ?? false),
+        skipAuthenticity: providerConfig.skipAuthenticity ?? false,
         capabilities: buildCapabilityMap(models, mapExposed, ctx),
         ...(providerConfig.probeBody
           ? { extraBody: providerConfig.probeBody }
@@ -418,12 +400,12 @@ export async function processOpenAICompatibleFreeProvider(
           details: r.details ?? [],
           maxOutputByModel,
           provider: name,
-          providerKind: opts.providerKind,
+          providerKind: providerConfig.type,
           sanitizedBase: sanitizeGroupName(name),
           baseUrl: providerConfig.baseUrl,
           apiKey: providerConfig.apiKey,
           groupRatio: providerConfig.ratio,
-          channelRemark: `${opts.channelRemarkLabel} via ${name}`,
+          channelRemark: `${label} via ${name}`,
           priceAdjustment: providerConfig.priceAdjustment,
           channelType: modality.channelType,
           modelType: modality.modelType,
@@ -431,7 +413,7 @@ export async function processOpenAICompatibleFreeProvider(
           paidModels: providerConfig.paidModels,
           ratioByModel,
           completionRatioByModel,
-          paramOverride: opts.paramOverride,
+          paramOverride: paramOverride,
           publishAs: providerConfig.publishAs,
           effortFamilies,
           metadataByModel: getMetadataFromEnabledModels(

@@ -34,25 +34,6 @@ async function fetchOpenRouterBalance(
   return credits === undefined || usage === undefined ? null : credits - usage;
 }
 
-// DeepInfra bills through Stripe: stripe_balance is a Stripe customer balance, so it
-// is NEGATIVE when funds are available and positive when money is owed. `recent` is
-// usage accrued since the last invoice, not yet billed, so spendable credit is
-// -stripe_balance - recent. The route is absent from the prose docs but declared
-// Bearer-auth in the live OpenAPI spec, and /v1/me returns it inline with ?checklist=true.
-async function fetchDeepInfraBalance(
-  baseUrl: string,
-  apiKey: string,
-): Promise<number | null> {
-  const data = await tryFetchJson<{
-    checklist?: { stripe_balance?: number; recent?: number };
-  }>(`${baseUrl.replace(/\/$/, "")}/v1/me?checklist=true`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
-  const checklist = data?.checklist;
-  if (typeof checklist?.stripe_balance !== "number") return null;
-  return -checklist.stripe_balance - (checklist.recent ?? 0);
-}
-
 // The relay's account lives on its site (the catalog's origin), not the API
 // host; the consumer balance is a decimal dollar string.
 async function fetchPoolRelayBalance(
@@ -113,15 +94,8 @@ async function providerBalance(
         // account" to an inference key, so a provider that has a management key
         // must read its balance with that one or report none at all.
         entry.balance = await fetchOpenRouterBalance(
-          provider.baseUrl ?? "https://openrouter.ai/api",
+          provider.baseUrl,
           provider.managementKey ?? provider.apiKey ?? "",
-        );
-        break;
-      }
-      case "deepinfra": {
-        entry.balance = await fetchDeepInfraBalance(
-          provider.baseUrl ?? "https://redacted.invalid",
-          provider.apiKey,
         );
         break;
       }

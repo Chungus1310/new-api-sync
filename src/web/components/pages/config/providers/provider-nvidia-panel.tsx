@@ -18,29 +18,13 @@ export function ProviderNvidiaPanel(props: { index: number }) {
           control={form.control}
           name={providerPath(props.index, "baseUrl")}
           schema={variantSchema}
-          label={
-            <>
-              {t("CONFIG.PROVIDER.BASE_URL")}
-              <span className="text-muted-foreground ml-1 text-xs font-normal">
-                ({t("CONFIG.FIELD.OPTIONAL")})
-              </span>
-            </>
-          }
-          placeholder="https://integrate.api.nvidia.com"
+          label={t("CONFIG.PROVIDER.BASE_URL")}
         />
         <MyFormInput
           control={form.control}
           name={providerPath(props.index, "imageBaseUrl")}
           schema={variantSchema}
-          label={
-            <>
-              {t("CONFIG.PROVIDER.IMAGE_BASE_URL")}
-              <span className="text-muted-foreground ml-1 text-xs font-normal">
-                ({t("CONFIG.FIELD.OPTIONAL")})
-              </span>
-            </>
-          }
-          placeholder="https://ai.api.nvidia.com"
+          label={t("CONFIG.PROVIDER.IMAGE_BASE_URL")}
         />
       </div>
       <MyFormInput
