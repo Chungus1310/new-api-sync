@@ -40,7 +40,7 @@ const tokenBudget = (model: string, n: number) =>
     : { max_tokens: n };
 const noError = (data: unknown) => !(data as ErrorEnvelope).error;
 // Mirrors the gateway, which sends no Authorization for a keyless channel:
-// redacted.invalid 401s any Bearer at all, even on its free models.
+// some keyless upstreams 401 any Bearer at all, even on their free models.
 const jsonBearer = (apiKey: string): Record<string, string> =>
   apiKey === "keyless"
     ? { "Content-Type": "application/json" }

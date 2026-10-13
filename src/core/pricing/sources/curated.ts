@@ -1997,7 +1997,7 @@ const CURATED: Record<string, SourceMetadata> = {
     supportsAudio: true,
     supportsTools: true,
   },
-  // Atria ASI preview model; self-reports Shanghai AI Lab. Specs from redacted.invalid/docs;
+  // Atria ASI preview model; self-reports Shanghai AI Lab. Specs from its API docs;
   // the date is its public launch post (r/opencodeCLI), not a published release date.
   "atria-dawn-preview": {
     releaseDate: iso("2026-09-15"),
