@@ -23,7 +23,7 @@ export const VENDOR_MATCHERS: Record<string, VendorMatcher> = {
   jina: { modelPatterns: ["jina-"], nameAliases: ["jina"], displayName: "Jina AI", icon: "Jina" },
   baai: { modelPatterns: ["bge-","bce-embedding","baai/"], nameAliases: ["baai","beijing academy"], displayName: "BAAI", icon: "BAAI" },
   baichuan: { modelPatterns: ["baichuan"], nameAliases: ["百川","baichuan"], displayName: "Baichuan", icon: "Baichuan.Color" },
-  meta: { modelPatterns: ["llama","muse-glimmer","muse-spark"], strongPatterns: ["muse-glimmer","muse-spark"], displayName: "Meta", icon: "Meta.Color" },
+  meta: { modelPatterns: ["llama","muse-glimmer","muse-spark","muse-wonder"], strongPatterns: ["muse-glimmer","muse-spark","muse-wonder"], displayName: "Meta", icon: "Meta.Color" },
   nvidia: { modelPatterns: ["nemotron","riva-translate","ising-calibration","nvclip","nv-embed","nemoretriever","nvidia/vila","nvidia/neva"], strongPatterns: ["nemotron","riva-translate","ising-calibration","nvclip","nv-embed","nemoretriever"], displayName: "NVIDIA", icon: "Nvidia.Color" },
   liquid: { modelPatterns: ["lfm-","lfm2"], nameAliases: ["liquid"], displayName: "Liquid", icon: "Liquid" },
   codeium: { modelPatterns: ["swe-1","swe-2","cascade"], strongPatterns: ["swe-1","swe-2"], nameAliases: ["codeium","windsurf"], displayName: "Codeium" },

@@ -1985,6 +1985,32 @@ const CURATED: Record<string, SourceMetadata> = {
     supportsVision: true,
     supportsTools: true,
   },
+  // Meta's frontier reasoning model; takes text, images, video, audio and PDFs.
+  "muse-wonder": {
+    releaseDate: iso("2026-10-12"),
+    contextWindow: 1_048_576,
+    maxInputTokens: 1_048_576,
+    series: "Muse",
+    isReasoning: true,
+    supportsVision: true,
+    supportsAudio: true,
+    supportsVideo: true,
+    supportsPdf: true,
+    supportsTools: true,
+  },
+  "gemini-4-argon": {
+    releaseDate: iso("2026-10-13"),
+    contextWindow: 1_048_576,
+    maxInputTokens: 1_048_576,
+    maxOutputTokens: 65_536,
+    series: "Gemini",
+    isReasoning: true,
+    supportsVision: true,
+    supportsAudio: true,
+    supportsVideo: true,
+    supportsPdf: true,
+    supportsTools: true,
+  },
   // Thinking Machines Lab MoE: 41B active of 975B. The :batch and -small variants
   // report 512K; the base lane is 1M.
   inkling: {
