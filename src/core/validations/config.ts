@@ -44,8 +44,29 @@ const EnabledModelEntrySchema = T.Union([
 // prettier-ignore
 const ModelTypeEnum = T.Union([T.Literal("text"), T.Literal("image"), T.Literal("video"), T.Literal("audio"), T.Literal("embedding")]);
 
+// Data protection facts the gateway shows per channel (setting.data_policy).
 // prettier-ignore
-const ProviderCommonProps = { name: str, testModelTypes: Opt(T.Array(ModelTypeEnum)), enabledModels: Opt(T.Array(EnabledModelEntrySchema)), priceAdjustment: Opt(PriceAdjustmentSchema), publishAs: Opt(T.Record(T.String(), str)), perUpstreamConcurrency: Opt(T.Integer({ minimum: 1, maximum: 1000 })), perUpstreamRpm: Opt(T.Number({ exclusiveMinimum: 0, maximum: 6000 })), authenticityPassTtlHours: Opt(T.Number({ exclusiveMinimum: 0, maximum: 720 })), channelLimits: Opt(T.Object({ maxConcurrency: Opt(T.Integer({ minimum: 1, maximum: 10000 })), maxRps: Opt(T.Number({ exclusiveMinimum: 0, maximum: 10000 })) })), autoTestIntervalMinutes: Opt(T.Integer({ minimum: 1, maximum: 10080 })), autoTestIntervalMaxMinutes: Opt(T.Integer({ minimum: 1, maximum: 10080 })), headerOverride: Opt(T.Record(str, str)), forceUpstreamStream: Opt(T.Union([T.Boolean(), T.Record(T.String(), T.Boolean())])), probeBody: Opt(T.Record(T.String(), T.Unknown())) } as const;
+const DataPolicyPromptsEnum = T.Union([T.Literal("none"), T.Literal("retains"), T.Literal("trains"), T.Literal("unknown")]);
+// prettier-ignore
+const DataPolicyTransferEnum = T.Union([T.Literal("adequacy"), T.Literal("dpf"), T.Literal("scc"), T.Literal("none"), T.Literal("unknown")]);
+export type DataPolicyPrompts = Static<typeof DataPolicyPromptsEnum>;
+export type DataPolicyTransfer = Static<typeof DataPolicyTransferEnum>;
+export const DATA_POLICY_PROMPTS: readonly DataPolicyPrompts[] = [
+  "none",
+  "retains",
+  "trains",
+  "unknown",
+];
+export const DATA_POLICY_TRANSFER: readonly DataPolicyTransfer[] = [
+  "adequacy",
+  "dpf",
+  "scc",
+  "none",
+  "unknown",
+];
+
+// prettier-ignore
+const ProviderCommonProps = { name: str, seatCountry: Opt(T.String({ pattern: "^[A-Z]{2}$" })), prompts: Opt(DataPolicyPromptsEnum), transfer: Opt(DataPolicyTransferEnum), testModelTypes: Opt(T.Array(ModelTypeEnum)), enabledModels: Opt(T.Array(EnabledModelEntrySchema)), priceAdjustment: Opt(PriceAdjustmentSchema), publishAs: Opt(T.Record(T.String(), str)), perUpstreamConcurrency: Opt(T.Integer({ minimum: 1, maximum: 1000 })), perUpstreamRpm: Opt(T.Number({ exclusiveMinimum: 0, maximum: 6000 })), authenticityPassTtlHours: Opt(T.Number({ exclusiveMinimum: 0, maximum: 720 })), channelLimits: Opt(T.Object({ maxConcurrency: Opt(T.Integer({ minimum: 1, maximum: 10000 })), maxRps: Opt(T.Number({ exclusiveMinimum: 0, maximum: 10000 })) })), autoTestIntervalMinutes: Opt(T.Integer({ minimum: 1, maximum: 10080 })), autoTestIntervalMaxMinutes: Opt(T.Integer({ minimum: 1, maximum: 10080 })), headerOverride: Opt(T.Record(str, str)), forceUpstreamStream: Opt(T.Union([T.Boolean(), T.Record(T.String(), T.Boolean())])), probeBody: Opt(T.Record(T.String(), T.Unknown())) } as const;
 
 // prettier-ignore
 const NewApiProviderSchema = T.Object({ type: T.Literal("newapi"), ...ProviderCommonProps, baseUrl: uri, systemAccessToken: str, userId: T.Integer({ minimum: 1 }), acceptRateLimited: Opt(T.Boolean()), acceptUpstreamDown: Opt(T.Boolean()) });

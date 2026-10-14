@@ -155,6 +155,19 @@
       "ENABLED_MODELS": "启用的模型",
       "PRICE_ADJUSTMENT": "价格调整",
       "TEST_MODEL_TYPES": "测试的模型类型",
+      "SEAT_COUNTRY": "所在国家",
+      "SEAT_COUNTRY_PLACEHOLDER": "ISO 代码，例如 DE",
+      "PROMPTS": "提示词处理",
+      "PROMPTS_NONE": "不存储",
+      "PROMPTS_RETAINS": "会保留",
+      "PROMPTS_TRAINS": "用于训练",
+      "PROMPTS_UNKNOWN": "未知",
+      "TRANSFER": "跨境传输依据",
+      "TRANSFER_ADEQUACY": "充分性认定",
+      "TRANSFER_DPF": "数据隐私框架（DPF）",
+      "TRANSFER_SCC": "标准合同条款",
+      "TRANSFER_NONE": "无",
+      "TRANSFER_UNKNOWN": "未知",
       "UNNAMED": "未命名"
     },
     "PRICE_ADJUSTMENT": {
@@ -521,6 +534,8 @@
       "CHANNEL_PASSTHROUGH_DISABLED": "[metadata] 已为对话补全媒体渠道「{name}」禁用请求体透传",
       "CHANNEL_PARAM_OVERRIDE_SET": "[metadata] 已{action}渠道「{name}」的禁用思考 param_override",
       "CHANNEL_SYSTEM_PROMPT_SET": "[metadata] 已{action}渠道「{name}」的 system_prompt",
+      "CHANNEL_DATA_POLICY_SET": "[metadata] 已设置渠道「{name}」的 data_policy",
+      "DATA_POLICY_SUMMARY": "[metadata] 已在 {count} 个渠道上同步 data_policy",
       "FREE_PRICING_SYNCED": "[metadata] 已将 {count} 个 :free 模型定价为倍率 0（更新 {changed} 个）",
       "UPSTREAM_PRICING_SYNCED": "[metadata] 已为当前渠道的 {count} 个上游模型定价（更新 {changed} 个）",
       "GRID_COLLAPSED": "[metadata] 已将 {count} 个网格定价模型折叠为统一最高价（更新 {changed} 个）"

@@ -6,6 +6,7 @@ import {
 } from "@core/catalog/constants/patterns";
 import { forEachVendor } from "@core/catalog/constants/vendor-matchers";
 import type { RuntimeConfig } from "@core/config";
+import { readDataPolicy, type DataPolicy } from "@core/data-policy";
 import { OptionStore } from "@core/sync/option-store";
 import type {
   Channel,
@@ -99,6 +100,15 @@ function extractSystemPrompt(
   }
 }
 
+function extractDataPolicy(setting?: string): DataPolicy | undefined {
+  if (!setting) return undefined;
+  try {
+    return readDataPolicy(JSON.parse(setting)?.data_policy);
+  } catch {
+    return undefined;
+  }
+}
+
 function mergeSettingCapabilities(
   existingSetting?: string,
   desiredSetting?: string,
@@ -127,6 +137,7 @@ function mergeSettingCapabilities(
     desiredSetting,
     "decisions_upstream_path",
   );
+  const desiredDataPolicy = extractDataPolicy(desiredSetting);
   if (
     !desiredCaps &&
     desiredPassThrough === undefined &&
@@ -136,7 +147,8 @@ function mergeSettingCapabilities(
     desiredForceStream === undefined &&
     desiredMaxConcurrency === undefined &&
     desiredMaxRps === undefined &&
-    desiredDecisionsPath === undefined
+    desiredDecisionsPath === undefined &&
+    !desiredDataPolicy
   )
     return undefined;
   let existing: Record<string, unknown> = {};
@@ -176,10 +188,11 @@ function mergeSettingCapabilities(
   if (desiredMaxRps !== undefined) existing.max_rps = desiredMaxRps;
   if (desiredDecisionsPath !== undefined)
     existing.decisions_upstream_path = desiredDecisionsPath;
+  if (desiredDataPolicy) existing.data_policy = desiredDataPolicy;
   return JSON.stringify(existing);
 }
 
-// Diff key: capabilities + passthrough + system_prompt are the setting fields the sync owns.
+// Diff key: capabilities + passthrough + system_prompt + data_policy are the setting fields the sync owns.
 function normalizeCapabilities(setting?: string): string | undefined {
   const caps = extractCapabilities(setting);
   const passThrough = extractPassThrough(setting);
@@ -199,6 +212,7 @@ function normalizeCapabilities(setting?: string): string | undefined {
     setting,
     "decisions_upstream_path",
   );
+  const dataPolicy = extractDataPolicy(setting);
   if (
     !caps &&
     passThrough === undefined &&
@@ -208,7 +222,8 @@ function normalizeCapabilities(setting?: string): string | undefined {
     forceStream === undefined &&
     maxConcurrency === undefined &&
     maxRps === undefined &&
-    decisionsPath === undefined
+    decisionsPath === undefined &&
+    !dataPolicy
   )
     return undefined;
   return JSON.stringify({
@@ -238,6 +253,7 @@ function normalizeCapabilities(setting?: string): string | undefined {
     ...(decisionsPath !== undefined
       ? { decisions_upstream_path: decisionsPath }
       : {}),
+    ...(dataPolicy ? { data_policy: dataPolicy } : {}),
   });
 }
 

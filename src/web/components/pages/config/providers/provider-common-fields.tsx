@@ -1,10 +1,16 @@
-import { ConfigSchema, type ConfigSchemaType } from "@core/validations/config";
+import {
+  ConfigSchema,
+  DATA_POLICY_PROMPTS,
+  DATA_POLICY_TRANSFER,
+  type ConfigSchemaType,
+} from "@core/validations/config";
 import { MODEL_TYPES } from "@core/types";
 import { EnabledModelsEditor } from "../editors/enabled-models-editor";
 import { PriceAdjustmentEditor } from "../editors/price-adjustment-editor";
 import { providerPath } from "./provider-path";
 import { MyFormCheckboxGroup } from "@web/components/elements/form/my-form-checkbox-group";
 import { MyFormInput } from "@web/components/elements/form/my-form-input";
+import { MyFormSelect } from "@web/components/elements/form/my-form-select";
 import { useTranslations } from "use-intl";
 import { Button } from "@web/components/ui/button";
 import { Input } from "@web/components/ui/input";
@@ -23,6 +29,27 @@ const MODEL_TYPE_LABEL: Record<string, TranslationKey> = {
   video: "MODEL_TYPE.VIDEO",
   audio: "MODEL_TYPE.AUDIO",
   embedding: "MODEL_TYPE.EMBEDDING",
+};
+
+const PROMPTS_LABEL: Record<
+  (typeof DATA_POLICY_PROMPTS)[number],
+  TranslationKey
+> = {
+  none: "CONFIG.PROVIDER.PROMPTS_NONE",
+  retains: "CONFIG.PROVIDER.PROMPTS_RETAINS",
+  trains: "CONFIG.PROVIDER.PROMPTS_TRAINS",
+  unknown: "CONFIG.PROVIDER.PROMPTS_UNKNOWN",
+};
+
+const TRANSFER_LABEL: Record<
+  (typeof DATA_POLICY_TRANSFER)[number],
+  TranslationKey
+> = {
+  adequacy: "CONFIG.PROVIDER.TRANSFER_ADEQUACY",
+  dpf: "CONFIG.PROVIDER.TRANSFER_DPF",
+  scc: "CONFIG.PROVIDER.TRANSFER_SCC",
+  none: "CONFIG.PROVIDER.TRANSFER_NONE",
+  unknown: "CONFIG.PROVIDER.TRANSFER_UNKNOWN",
 };
 
 export function ProviderCommonFields(props: { index: number }) {
@@ -65,6 +92,36 @@ export function ProviderCommonFields(props: { index: number }) {
         max={1000}
         placeholder={t("CONFIG.PROVIDER.PER_UPSTREAM_CONCURRENCY_PLACEHOLDER")}
       />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MyFormInput
+          control={form.control}
+          name={providerPath(props.index, "seatCountry")}
+          schema={variantSchema}
+          label={t("CONFIG.PROVIDER.SEAT_COUNTRY")}
+          placeholder={t("CONFIG.PROVIDER.SEAT_COUNTRY_PLACEHOLDER")}
+        />
+        <MyFormSelect
+          control={form.control}
+          name={providerPath(props.index, "prompts")}
+          schema={variantSchema}
+          label={t("CONFIG.PROVIDER.PROMPTS")}
+          options={DATA_POLICY_PROMPTS.map((value) => ({
+            value,
+            label: t(PROMPTS_LABEL[value]),
+          }))}
+        />
+        <MyFormSelect
+          control={form.control}
+          name={providerPath(props.index, "transfer")}
+          schema={variantSchema}
+          label={t("CONFIG.PROVIDER.TRANSFER")}
+          options={DATA_POLICY_TRANSFER.map((value) => ({
+            value,
+            label: t(TRANSFER_LABEL[value]),
+          }))}
+        />
+      </div>
 
       <div className="grid gap-2">
         <Label>{t("CONFIG.PROVIDER.ENABLED_MODELS")}</Label>

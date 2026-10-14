@@ -45,6 +45,11 @@ import {
   fetchOpenRouterDescriptions,
 } from "@core/catalog/metadata";
 import type { RuntimeConfig } from "@core/config";
+import {
+  dataPolicyByTag,
+  readDataPolicy,
+  sameDataPolicy,
+} from "@core/data-policy";
 import { VerdictStore } from "@core/infra/verdict-store";
 import { flushProbeIds } from "@core/testing/probe-ids";
 import { flushAllLaneKeys, loadLaneKeys } from "@core/infra/lane-keys";
@@ -114,6 +119,7 @@ export interface MetadataSyncResult {
   passThroughEnabled: number;
   paramOverrideChanged: number;
   systemPromptChanged: number;
+  dataPolicyChanged: number;
   optionErrors: string[];
 }
 
@@ -564,6 +570,35 @@ export async function reconcileSystemPrompt(
   return changed;
 }
 
+// data_policy is otherwise written only when a full run emits a channel. Sets it
+// on existing channels by tag, for providers this config declares only: the
+// cluster config holds three providers, and clearing every other tag's policy
+// would wipe what a local run published.
+export async function reconcileDataPolicy(
+  target: NewApiClient,
+  channels: Channel[],
+  config: RuntimeConfig,
+): Promise<number> {
+  const byTag = dataPolicyByTag(config.providers);
+  if (byTag.size === 0) return 0;
+
+  let changed = 0;
+  for (const ch of channels) {
+    const want = ch.tag ? byTag.get(ch.tag) : undefined;
+    if (!want) continue;
+    const ok = await patchSetting(target, ch, (setting) => {
+      if (sameDataPolicy(readDataPolicy(setting.data_policy), want))
+        return false;
+      setting.data_policy = want;
+      return true;
+    });
+    if (!ok) continue;
+    changed++;
+    consola.info(t("CORE.METADATA.CHANNEL_DATA_POLICY_SET", { name: ch.name }));
+  }
+  return changed;
+}
+
 // What a re-seed would change on an existing row, and why. Pure so the reasons
 // can be logged and the churn diagnosed from the cluster log.
 function planRowPatch(
@@ -682,6 +717,7 @@ export async function runMetadataSync(
     passThroughEnabled: 0,
     paramOverrideChanged: 0,
     systemPromptChanged: 0,
+    dataPolicyChanged: 0,
     optionErrors: [],
   };
 
@@ -738,6 +774,11 @@ export async function runMetadataSync(
     config,
   );
   result.systemPromptChanged = await reconcileSystemPrompt(
+    target,
+    channels,
+    config,
+  );
+  result.dataPolicyChanged = await reconcileDataPolicy(
     target,
     channels,
     config,
@@ -1316,6 +1357,12 @@ export function printMetadataSummary(result: MetadataSyncResult): void {
   if (result.systemPromptChanged > 0)
     consola.info(
       `[metadata] reconciled system_prompt on ${result.systemPromptChanged} channels`,
+    );
+  if (result.dataPolicyChanged > 0)
+    consola.info(
+      t("CORE.METADATA.DATA_POLICY_SUMMARY", {
+        count: result.dataPolicyChanged,
+      }),
     );
   if (result.failedModels.length > 0)
     consola.warn(

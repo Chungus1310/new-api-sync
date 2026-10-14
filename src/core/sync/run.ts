@@ -18,7 +18,10 @@ import {
   printGroupRenamePlan,
 } from "@core/sync/group-rename";
 import { updateGuestTokenIfConfigured } from "@core/sync/guest-token";
-import { reconcileSystemPrompt } from "@core/sync/metadata";
+import {
+  reconcileDataPolicy,
+  reconcileSystemPrompt,
+} from "@core/sync/metadata";
 import {
   OptionStore,
   parseJsonObject,
@@ -264,6 +267,7 @@ export async function runSync(
     // propagates without recreating them (mirrors the metadata-sync reconcile).
     const liveChannels = await target.listChannels();
     await reconcileSystemPrompt(target, liveChannels, config);
+    await reconcileDataPolicy(target, liveChannels, config);
     throwIfRunAborted();
     await updateGuestTokenIfConfigured(target, liveChannels);
     timingMark("reconcile+token");

@@ -155,6 +155,19 @@
       "ENABLED_MODELS": "Enabled models",
       "PRICE_ADJUSTMENT": "Price adjustment",
       "TEST_MODEL_TYPES": "Test model types",
+      "SEAT_COUNTRY": "Seat country",
+      "SEAT_COUNTRY_PLACEHOLDER": "ISO code, e.g. DE",
+      "PROMPTS": "Prompt handling",
+      "PROMPTS_NONE": "Not stored",
+      "PROMPTS_RETAINS": "Retained",
+      "PROMPTS_TRAINS": "Used for training",
+      "PROMPTS_UNKNOWN": "Unknown",
+      "TRANSFER": "Transfer basis",
+      "TRANSFER_ADEQUACY": "Adequacy decision",
+      "TRANSFER_DPF": "Data Privacy Framework",
+      "TRANSFER_SCC": "Standard contractual clauses",
+      "TRANSFER_NONE": "None",
+      "TRANSFER_UNKNOWN": "Unknown",
       "UNNAMED": "unnamed"
     },
     "PRICE_ADJUSTMENT": {
@@ -521,6 +534,8 @@
       "CHANNEL_PASSTHROUGH_DISABLED": "[metadata] disabled body pass-through on chat-completions media channel \"{name}\"",
       "CHANNEL_PARAM_OVERRIDE_SET": "[metadata] {action} disable-thinking param_override on channel \"{name}\"",
       "CHANNEL_SYSTEM_PROMPT_SET": "[metadata] {action} system_prompt on channel \"{name}\"",
+      "CHANNEL_DATA_POLICY_SET": "[metadata] set data_policy on channel \"{name}\"",
+      "DATA_POLICY_SUMMARY": "[metadata] reconciled data_policy on {count} channels",
       "FREE_PRICING_SYNCED": "[metadata] priced {count} :free models at ratio 0 ({changed} updated)",
       "UPSTREAM_PRICING_SYNCED": "[metadata] priced {count} upstream models on current channels ({changed} updated)",
       "GRID_COLLAPSED": "[metadata] collapsed {count} grid models to flat max-price ({changed} updated)"

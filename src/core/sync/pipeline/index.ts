@@ -12,6 +12,7 @@ import {
   getPricingGridFromEnabledModels,
   type RuntimeConfig,
 } from "@core/config";
+import { dataPolicyByTag, settingWithDataPolicy } from "@core/data-policy";
 import { computePricedPlan } from "@core/pricing/compute";
 import { emitChannels } from "@core/pricing/emit";
 import { fetchAllPricingSources } from "@core/pricing/resolver";
@@ -373,6 +374,13 @@ async function buildDesiredState(
         description: `TypeSafe decisions via ${provider.name}`,
         provider: channel.tag ?? provider.name,
       });
+  }
+
+  const dataPolicies = dataPolicyByTag(config.providers);
+  for (const channel of channels) {
+    const policy = channel.tag ? dataPolicies.get(channel.tag) : undefined;
+    if (policy)
+      channel.setting = settingWithDataPolicy(channel.setting, policy);
   }
 
   const allPricingGrids: Record<string, Record<string, string | number>[]> = {};

@@ -1,3 +1,4 @@
+import { withDataPolicyDefaults } from "@core/data-policy";
 import type { ChannelParamOverrideRule } from "@core/pricing/param-override";
 import { MODEL_TYPES, type ModelType } from "@core/types";
 import {
@@ -210,12 +211,14 @@ export async function loadConfig(path?: string): Promise<RuntimeConfig> {
       t("ERROR.CONFIG_VALIDATION_FAILED", { detail: customErrors.join("\n") }),
     );
 
-  const providers = typed.providers.map((p) => {
-    if (p.type === "nvidia") return { ...p, ratio: p.ratio ?? 1 };
-    if (p.type === "openrouter" || p.type === "openai-compatible")
-      return { ...p, ratio: p.ratio ?? 0 };
-    return p;
-  }) as AnyProviderConfig[];
+  const providers = (
+    typed.providers.map((p) => {
+      if (p.type === "nvidia") return { ...p, ratio: p.ratio ?? 1 };
+      if (p.type === "openrouter" || p.type === "openai-compatible")
+        return { ...p, ratio: p.ratio ?? 0 };
+      return p;
+    }) as AnyProviderConfig[]
+  ).map(withDataPolicyDefaults);
 
   const global = await loadGlobalConfig();
   const mergedBlacklist = [
