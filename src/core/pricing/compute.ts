@@ -21,7 +21,7 @@ import {
   applyChannelParamOverride,
   type ChannelParamOverrideRule,
 } from "./param-override";
-import { resolveBasePricing } from "./resolver";
+import { resolveBasePricing, resolveMedianPricing } from "./resolver";
 import type { PricingSource } from "./sources/types";
 import type {
   BaselineInputs,
@@ -262,6 +262,10 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
       pricingSources.length > 0
         ? resolveBasePricing(model, pricingSources, reverseMapping)
         : undefined;
+    const medianHit =
+      canonicalRatio === undefined && pricingSources.length > 0
+        ? resolveMedianPricing(model, pricingSources, reverseMapping)
+        : undefined;
     const rawSourceHit = canonicalRatio !== undefined ? listHit : undefined;
     const sourceHit =
       rawSourceHit !== undefined &&
@@ -323,16 +327,16 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
       completionRatio = co?.upstreamCompletionRatio ?? 1;
       cacheRatio = co?.cacheRatio;
       createCacheRatio = co?.createCacheRatio;
-    } else if (listHit) {
+    } else if (medianHit) {
       // No majority means the sources disagree past rounding, not that nobody
-      // knows the list. The top source still beats the next fallback, the
+      // knows the list. Their middle offer still beats the next fallback, the
       // cheapest lane's own cost: that wrote glm-5.3 at 0.003 off a $0.006/M
       // merchant against a $1.26/M list, and every other lane then read as an
       // 8x to 700x markup while retail never moved.
-      writtenRatio = listHit.modelRatio;
-      completionRatio = listHit.completionRatio;
-      cacheRatio = listHit.cacheRatio;
-      createCacheRatio = listHit.createCacheRatio;
+      writtenRatio = medianHit.modelRatio;
+      completionRatio = medianHit.completionRatio;
+      cacheRatio = medianHit.cacheRatio;
+      createCacheRatio = medianHit.createCacheRatio;
     } else if (existing && existing.ratio > 0) {
       // Unpriced by every source: keep the stored sticker rather than re-basing
       // to whichever merchant is cheapest today.

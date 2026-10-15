@@ -103,6 +103,29 @@ export function resolveBasePricing(
   return undefined;
 }
 
+/**
+ * The middle offer among every source that prices the model, ordered by input
+ * price. Used when no two sources agree: the top source alone wrote one cloud
+ * host's price (litellm's deepseek-v4.1-flash at $0.01 in, $1.20 out against
+ * $0.19/$0.77 and $0.24/$1.16 elsewhere). Ordering by input plus output would
+ * still pick it, its inflated output lands it in the middle. With an even count
+ * the cheaper of the two middle offers wins.
+ */
+export function resolveMedianPricing(
+  modelName: string,
+  sources: PricingSource[],
+  reverseMapping: Map<string, string>,
+): BaseModelPricing | undefined {
+  const hits: BaseModelPricing[] = [];
+  for (const source of sources) {
+    const hit = lookup(modelName, source.pricing, reverseMapping);
+    if (hit && hit.value.modelRatio > 0) hits.push(hit.value);
+  }
+  if (hits.length === 0) return undefined;
+  hits.sort((a, b) => a.modelRatio - b.modelRatio);
+  return hits[Math.floor((hits.length - 1) / 2)];
+}
+
 // OpenRouter/basellm ship blurbs cut mid-sentence with a trailing ellipsis
 // ("...reasoning effort levels (low, medium, high, max,..."). A higher-priority
 // source with a truncated description must not clobber a full one from a lower
@@ -117,13 +140,18 @@ function resolveOneName(
   reverseMapping: Map<string, string>,
 ): ResolvedMetadata {
   const merged: SourceMetadata = {};
-  const hits = sources.map((s) => lookup(modelName, s.metadata, reverseMapping));
+  const hits = sources.map((s) =>
+    lookup(modelName, s.metadata, reverseMapping),
+  );
   // A source lacking this model falls back to a sibling (minimax-m2-her -> minimax-m2).
   // Sibling fields only fill gaps: every exact hit applies after them, whatever its
   // source priority, so the model's own context and description always win.
   const order = [...hits.keys()]
     .reverse()
-    .sort((a, b) => Number(hits[a]?.exact ?? false) - Number(hits[b]?.exact ?? false));
+    .sort(
+      (a, b) =>
+        Number(hits[a]?.exact ?? false) - Number(hits[b]?.exact ?? false),
+    );
   let descriptionExact = false;
   for (const i of order) {
     const hit = hits[i];

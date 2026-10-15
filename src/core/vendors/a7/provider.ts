@@ -9,7 +9,7 @@ import type {
   ProviderRunContext,
   UpstreamOffer,
 } from "@core/pricing/offers";
-import { resolveBasePricing } from "@core/pricing/resolver";
+import { resolveMedianPricing } from "@core/pricing/resolver";
 import { resolveCanonicalByVote } from "@core/pricing/vote";
 import { testAndFilterModels } from "@core/testing/runner";
 import { clearTestFail } from "@core/testing/verdict-cache";
@@ -78,7 +78,7 @@ function canonicalVote(
   // Same fallback as compute's sticker: a failed vote left this undefined, so
   // the sell ceiling never applied and a merchant repricing itself to 32x list
   // sailed through at cost x profitMultiple.
-  const hit = resolveBasePricing(
+  const hit = resolveMedianPricing(
     exposedName,
     ctx.pricingSources,
     ctx.reverseMapping,
