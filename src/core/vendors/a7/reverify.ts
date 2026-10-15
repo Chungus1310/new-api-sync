@@ -116,7 +116,10 @@ export async function reverifyLiveLanes(
     if (!listing) continue;
     const key = `${provider.name}:${listing.channel_id}|${market}`;
     const failReason = getVerdict(key)?.authenticityReason ?? "";
-    if (isAuthenticityBlacklisted(key) && failReason !== REASONING_FAIL_REASON) {
+    if (
+      isAuthenticityBlacklisted(key) &&
+      failReason !== REASONING_FAIL_REASON
+    ) {
       await disableLane(ch, failReason);
       continue;
     }

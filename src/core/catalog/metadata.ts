@@ -234,12 +234,15 @@ function fuzzyLookup<T>(
     if (v === undefined || tierSuffixMismatch(norm, normalize(k)))
       return undefined;
     const s = similarity(name, k);
-    return s < threshold ? undefined : { key: k, value: v, score: s, exact: false };
+    return s < threshold
+      ? undefined
+      : { key: k, value: v, score: s, exact: false };
   };
   const exactKey = index.normalized.get(norm)?.[0];
   if (exactKey) {
     const v = index.candidates.get(exactKey);
-    if (v !== undefined) return { key: exactKey, value: v, score: 1.0, exact: true };
+    if (v !== undefined)
+      return { key: exactKey, value: v, score: 1.0, exact: true };
   }
   for (const variant of strippedVariants(norm)) {
     // A stripped variant that EXACTLY equals a candidate's normalized key is a
@@ -256,7 +259,12 @@ function fuzzyLookup<T>(
     if (directKey) {
       const v = index.candidates.get(directKey);
       if (v !== undefined)
-        return { key: directKey, value: v, score: 1.0, exact: sameModel.has(variant) };
+        return {
+          key: directKey,
+          value: v,
+          score: 1.0,
+          exact: sameModel.has(variant),
+        };
     }
     const hit = score(keys);
     if (hit) return hit;
@@ -272,7 +280,8 @@ function fuzzyLookup<T>(
     if (!strippedVariants(cNorm, true).includes(norm)) continue;
     const k = keys?.[0];
     const v = k ? index.candidates.get(k) : undefined;
-    if (k && v !== undefined) return { key: k, value: v, score: 1.0, exact: true };
+    if (k && v !== undefined)
+      return { key: k, value: v, score: 1.0, exact: true };
   }
   for (const [cNorm, keys] of index.normalized) {
     for (const variant of strippedVariants(cNorm)) {
@@ -283,7 +292,8 @@ function fuzzyLookup<T>(
       if (variant === norm) {
         const k = keys?.[0];
         const v = k ? index.candidates.get(k) : undefined;
-        if (k && v !== undefined) consider({ key: k, value: v, score: 1.0, exact: false });
+        if (k && v !== undefined)
+          consider({ key: k, value: v, score: 1.0, exact: false });
         break;
       }
     }
@@ -380,7 +390,8 @@ export function buildMetadataMap(opts: {
     const orHit = lookup(modelName, orIndex, reverseMapping);
     const blmHit = lookup(modelName, blmIndex, reverseMapping);
     // A sibling's OpenRouter blurb must not beat basellm's text for the model itself.
-    const siblingOnly = !orHit?.exact && blmHit?.exact && blmHit.value.description;
+    const siblingOnly =
+      !orHit?.exact && blmHit?.exact && blmHit.value.description;
     const orResult = siblingOnly ? undefined : orHit;
     const blmResult = blmHit;
     if (orResult) {

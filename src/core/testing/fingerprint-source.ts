@@ -20,9 +20,12 @@ export function sourceOfFor(config: RuntimeConfig): SourceOf {
     // a7 keys are `a7:<merchant>|<model>`: the provider name ends at the colon.
     const provider = entry.provider.split(":")[0] ?? entry.provider;
     const type = typeOf.get(provider);
-    if (type === "a7" || type === "si") return { source: "market", name: provider };
+    if (type === "a7" || type === "si")
+      return { source: "market", name: provider };
     if (type === "ih") {
-      const pool = entry.model.includes("/") ? entry.model.split("/")[0]! : provider;
+      const pool = entry.model.includes("/")
+        ? entry.model.split("/")[0]!
+        : provider;
       return { source: "host", name: `${provider}:${pool}` };
     }
     const official = officialOf.get(provider);

@@ -343,7 +343,11 @@ export async function testReasoningRequest(
   config: StreamRequestConfig,
   timeoutMs: number,
 ): Promise<ReasoningProbe> {
-  const out: ReasoningProbe = { reasoningChars: 0, reasoningTokens: null, contentChars: 0 };
+  const out: ReasoningProbe = {
+    reasoningChars: 0,
+    reasoningTokens: null,
+    contentChars: 0,
+  };
   try {
     await paceUpstreamRequest(config.url);
     const response = await fetchSameHost(config.url, {
@@ -363,7 +367,8 @@ export async function testReasoningRequest(
         const parts = frame.candidates?.[0]?.content?.parts;
         if (Array.isArray(parts)) {
           for (const part of parts) {
-            if (part.thought) out.reasoningChars += String(part.text ?? "").length;
+            if (part.thought)
+              out.reasoningChars += String(part.text ?? "").length;
             else answer += String(part.text ?? "");
           }
           const thoughts = frame.usageMetadata?.thoughtsTokenCount;
@@ -371,7 +376,9 @@ export async function testReasoningRequest(
           continue;
         }
         const delta = frame.choices?.[0]?.delta ?? {};
-        out.reasoningChars += String(delta.reasoning_content ?? delta.reasoning ?? "").length;
+        out.reasoningChars += String(
+          delta.reasoning_content ?? delta.reasoning ?? "",
+        ).length;
         answer += String(delta.content ?? "");
         const tokens = frame.usage?.completion_tokens_details?.reasoning_tokens;
         if (typeof tokens === "number") out.reasoningTokens = tokens;

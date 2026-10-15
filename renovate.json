@@ -6,19 +6,13 @@
     ":semanticCommitsDisabled",
     "helpers:pinGitHubActionDigests"
   ],
-  "enabledManagers": [
-    "github-actions"
-  ],
+  "enabledManagers": ["github-actions"],
   "timezone": "Europe/Berlin",
-  "schedule": [
-    "before 6am on monday"
-  ],
+  "schedule": ["before 6am on monday"],
   "ignoreTests": true,
   "automerge": true,
   "automergeType": "branch",
-  "automergeSchedule": [
-    "at any time"
-  ],
+  "automergeSchedule": ["at any time"],
   "minimumReleaseAge": "7 days",
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Dependency dashboard",
@@ -27,9 +21,7 @@
   "commitMessageExtra": "to {{newVersion}}",
   "packageRules": [
     {
-      "matchUpdateTypes": [
-        "major"
-      ],
+      "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true
     }
   ]

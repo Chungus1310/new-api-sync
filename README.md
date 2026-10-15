@@ -99,19 +99,19 @@ Any OpenAI-compatible upstream is a `type: "openai-compatible"` provider. The co
 
 Pulls from [OpenRouter](https://openrouter.ai/). Free models (`prompt=0` and `completion=0`) are emitted as a free tier; paid models are bucketed under a per-vendor channel and a single shared `group_ratio` is picked from the candidate ladder `[1, 0.5, 0.25, 0.1, 0.05, 0.01]` such that every kept model stays at or below canonical retail. Models that don't fit at any candidate are dropped.
 
-| Field                    | Required | Description                                                            |
-| ------------------------ | -------- | ---------------------------------------------------------------------- |
-| `name`                   | yes      | Unique identifier, used as channel tag                                 |
+| Field                    | Required | Description                                                                                          |
+| ------------------------ | -------- | ---------------------------------------------------------------------------------------------------- |
+| `name`                   | yes      | Unique identifier, used as channel tag                                                               |
 | `managementKey`          | one of   | Management key: mints one capped, guardrail-pinned key per model, used for the probe and the channel |
-| `apiKey`                 | one of   | Inference key, only for a provider without a management key (shared by every channel) |
-| `baseUrl`                | yes      | API root                                                               |
-| `models`                 |          | Explicit model IDs (e.g. `moonshotai/kimi-k2.6:free`); skips discovery |
-| `enabledVendors`         |          | Filter discovered models by vendor prefix (`anthropic`, `openai`, ...) |
-| `enabledModels`          |          | Glob patterns. Bare IDs (no `*`) are also added to the candidate set   |
-| `ratio`                  |          | Free-tier group ratio (default `0`)                                    |
-| `testModelTypes`         |          | Override global test types                                             |
-| `priceAdjustment`        |          | Number or per-key object (see Price Adjustment below)                  |
-| `perUpstreamConcurrency` |          | Override the global per-upstream concurrency cap                       |
+| `apiKey`                 | one of   | Inference key, only for a provider without a management key (shared by every channel)                |
+| `baseUrl`                | yes      | API root                                                                                             |
+| `models`                 |          | Explicit model IDs (e.g. `moonshotai/kimi-k2.6:free`); skips discovery                               |
+| `enabledVendors`         |          | Filter discovered models by vendor prefix (`anthropic`, `openai`, ...)                               |
+| `enabledModels`          |          | Glob patterns. Bare IDs (no `*`) are also added to the candidate set                                 |
+| `ratio`                  |          | Free-tier group ratio (default `0`)                                                                  |
+| `testModelTypes`         |          | Override global test types                                                                           |
+| `priceAdjustment`        |          | Number or per-key object (see Price Adjustment below)                                                |
+| `perUpstreamConcurrency` |          | Override the global per-upstream concurrency cap                                                     |
 
 ### NVIDIA NIM Provider (`type: "nvidia"`)
 

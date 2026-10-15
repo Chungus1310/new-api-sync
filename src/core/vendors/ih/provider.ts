@@ -253,7 +253,10 @@ export async function processIhProvider(
     // One lane's own quota answer is ordinary, so it takes half the run.
     if (balanceErrors > 0 && balanceErrors * 2 >= lanes.length) {
       report.deletesWithheld = true;
-      report.error = t("CORE.ERROR.BALANCE_EMPTY_DELETES_WITHHELD", { name, count: balanceErrors });
+      report.error = t("CORE.ERROR.BALANCE_EMPTY_DELETES_WITHHELD", {
+        name,
+        count: balanceErrors,
+      });
       consola.warn(report.error);
     }
     consola.info(
