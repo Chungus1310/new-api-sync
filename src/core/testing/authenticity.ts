@@ -75,12 +75,15 @@ const LADDER: readonly RuleId[] = [
 // Judged for every maker: a model coached to hide its backend restates the
 // coaching in its own reasoning, which no self-confusion explains away; a
 // platform refusal sent as the reply at 200 is billed and never failed over; and
-// a reply whose own model field names another model is not the model sold.
+// a reply whose own model field names another model is not the model sold. A
+// model that thinks only when asked and skips it at high effort is the same
+// model run without its reasoning, which users read as a worse one.
 const ENFORCED: readonly RuleId[] = [
   "masked-identity",
   "fake-200",
   "substituted",
   "served-model-mismatch",
+  "thinking-honored",
 ];
 // Never a verdict, only evidence. The survey asks its own questions (injected
 // system prompt, a sum, a JSON self-description); the answer fingerprint is
