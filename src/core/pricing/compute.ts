@@ -21,7 +21,11 @@ import {
   applyChannelParamOverride,
   type ChannelParamOverrideRule,
 } from "./param-override";
-import { resolveBasePricing, resolveMedianPricing } from "./resolver";
+import {
+  resolveBasePricing,
+  resolveCacheRatio,
+  resolveMedianPricing,
+} from "./resolver";
 import type { PricingSource } from "./sources/types";
 import type {
   BaselineInputs,
@@ -351,6 +355,15 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
       const allFree = occurrences.every((o) => o.model.isFree);
       writtenRatio = allFree ? 0 : 1;
       completionRatio = allFree ? 0 : 1;
+    }
+
+    if (cacheRatio === undefined && pricingSources.length > 0) {
+      cacheRatio = resolveCacheRatio(
+        model,
+        pricingSources,
+        reverseMapping,
+        writtenRatio,
+      );
     }
 
     // No fixed occurrence: this model bills per-token (ratio + completionRatio). If we resolved a

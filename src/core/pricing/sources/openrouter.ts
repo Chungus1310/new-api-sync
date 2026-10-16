@@ -261,16 +261,28 @@ async function fetchEndpointsForModel(
   return trace;
 }
 
+// A model only OpenRouter prices otherwise carries no cache ratio, and the
+// gateway then bills cache reads at the full input rate.
+function cacheReadRatio(model: OpenRouterSummaryModel): number | undefined {
+  const read = parseUsdPerToken(model.pricing?.input_cache_read);
+  const prompt = parseUsdPerToken(model.pricing?.prompt);
+  return read != null && prompt != null && prompt > 0
+    ? read / prompt
+    : undefined;
+}
+
 function toPricing(
   _key: string,
   model: OpenRouterSummaryModel,
 ): BaseModelPricing | undefined {
   const picked = endpointTraces.get(model.id)?.picked;
+  const cacheRatio = cacheReadRatio(model);
   if (picked && picked.promptUsd > 0) {
     return {
       modelRatio: usdPerTokenToRatio(picked.promptUsd),
       completionRatio:
         picked.completionUsd > 0 ? picked.completionUsd / picked.promptUsd : 1,
+      ...(cacheRatio !== undefined ? { cacheRatio } : {}),
       source: "openrouter",
       sourceKey: model.id,
     };
@@ -286,6 +298,7 @@ function toPricing(
   return {
     modelRatio: usdPerTokenToRatio(promptUsd),
     completionRatio: completionUsd > 0 ? completionUsd / promptUsd : 1,
+    ...(cacheRatio !== undefined ? { cacheRatio } : {}),
     source: "openrouter",
     sourceKey: model.id,
   };

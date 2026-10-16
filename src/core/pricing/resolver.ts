@@ -98,7 +98,35 @@ export function resolveBasePricing(
 ): BaseModelPricing | undefined {
   for (const source of sources) {
     const hit = lookup(modelName, source.pricing, reverseMapping);
-    if (hit) return hit.value;
+    if (!hit) continue;
+    if (hit.value.cacheRatio !== undefined) return hit.value;
+    const cacheRatio = resolveCacheRatio(
+      modelName,
+      sources,
+      reverseMapping,
+      hit.value.modelRatio,
+    );
+    return cacheRatio === undefined ? hit.value : { ...hit.value, cacheRatio };
+  }
+  return undefined;
+}
+
+// A source without a cache price would otherwise leave cache reads billed at the
+// full input rate; take it from any source that agrees on the input price.
+export function resolveCacheRatio(
+  modelName: string,
+  sources: PricingSource[],
+  reverseMapping: Map<string, string>,
+  modelRatio: number,
+): number | undefined {
+  for (const source of sources) {
+    const hit = lookup(modelName, source.pricing, reverseMapping)?.value;
+    if (
+      hit?.cacheRatio !== undefined &&
+      Math.abs(hit.modelRatio - modelRatio) <= modelRatio * 0.01
+    ) {
+      return hit.cacheRatio;
+    }
   }
   return undefined;
 }
