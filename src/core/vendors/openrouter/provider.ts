@@ -131,6 +131,10 @@ function unsupportedParamOps(
     });
   return ops.length > 0 ? { operations: ops } : undefined;
 }
+// A price cap of 0 makes OpenRouter refuse instead of bill when a free endpoint is
+// gone; ling-3.1-flash:free billed ~$10 a day on Novita after its promotion ended.
+const FREE_ONLY_PROVIDER = { max_price: { prompt: 0, completion: 0 } };
+
 // Host exclusions that apply to ONE model rather than the whole host. gmicloud's
 // glm-5.2 does not separate reasoning from content and runs a classifier that trims
 // replies mid-response (user-reported), and it is the priciest open1 glm-5.2 lane;
@@ -262,13 +266,15 @@ export async function processOpenRouterProvider(
         );
 
         const freeSet = new Set(catalogue.freeIds);
-        const paidSet = new Set<string>();
-        for (const id of requestedPaidIds) {
-          if (freeSet.has(id)) continue;
-          paidSet.add(id);
-        }
+        // A requested id with a paid host stays paid even when another provider
+        // serves it free: that provider gets a separate :free lane pinned to it.
+        const paidSet = new Set(
+          requestedPaidIds.filter(
+            (id) => !freeSet.has(id) || catalogue.paidEndpoints.has(id),
+          ),
+        );
 
-        const candidateIds = [...freeSet, ...paidSet];
+        const candidateIds = [...new Set([...freeSet, ...paidSet])];
         if (candidateIds.length === 0) {
           report.error = t("CORE.ERROR.NO_MODELS_FOUND");
           return;
@@ -300,7 +306,7 @@ export async function processOpenRouterProvider(
         // upstream drops it; the free tier has no such guarantee and throttles constantly,
         // so it still earns the test. Paid models pass through untested.
         const toProbe = filtered.filter((id) => freeSet.has(id));
-        const untested = filtered.filter((id) => !freeSet.has(id));
+        const untested = filtered.filter((id) => paidSet.has(id));
 
         // One capped key per model, minted through the management key before
         // anything is sent: the probe runs on the same credential the channel
@@ -361,6 +367,7 @@ export async function processOpenRouterProvider(
           keyByModel.get(candidateExposed.get(upstream) ?? "");
 
         let working = untested;
+        let freeWorking = new Set<string>();
         let details: Awaited<
           ReturnType<typeof testAndFilterModels>
         >["details"] = [];
@@ -377,13 +384,15 @@ export async function processOpenRouterProvider(
             providerLabel: name,
             testableModelTypes: new Set(["text"]),
             acceptRateLimited: providerConfig.acceptRateLimited ?? false,
+            extraBody: { provider: FREE_ONLY_PROVIDER },
             capabilities: buildCapabilityMap(
               toProbe,
               lowercaseExposed(config),
               ctx,
             ),
           });
-          working = [...untested, ...filterResult.workingModels];
+          freeWorking = new Set(filterResult.workingModels);
+          working = [...new Set([...untested, ...filterResult.workingModels])];
           details = filterResult.details ?? [];
         }
 
@@ -408,10 +417,10 @@ export async function processOpenRouterProvider(
             matchesAnyPattern(exposed, [glob]),
           )?.[1];
         const freeResolutions = resolutions.filter((r) =>
-          freeSet.has(r.upstream),
+          freeWorking.has(r.upstream),
         );
-        const paidResolutions = resolutions.filter(
-          (r) => !freeSet.has(r.upstream),
+        const paidResolutions = resolutions.filter((r) =>
+          paidSet.has(r.upstream),
         );
 
         const enabledMetadata = getMetadataFromEnabledModels(
@@ -440,11 +449,12 @@ export async function processOpenRouterProvider(
               modelType: "text",
               testDetail: details.find((d) => d.model === r.upstream),
               isFree: true,
-              // A zero price is often a promotion on the paid id: when it ended on
-              // 2026-10-13, ling-3.1-flash:free kept routing to Novita and billed ~$10 a
-              // day. A price cap of 0 makes OpenRouter refuse instead of charge.
               paramOverride: JSON.stringify({
-                provider: { max_price: { prompt: 0, completion: 0 } },
+                provider: {
+                  ...FREE_ONLY_PROVIDER,
+                  only: catalogue.freeProviders.get(r.upstream) ?? [],
+                  allow_fallbacks: false,
+                },
                 ...(thinkingDisabled(r)
                   ? unsupportedParamOps(undefined, true, true)
                   : {}),

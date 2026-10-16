@@ -86,6 +86,8 @@ export interface OpenRouterPaidEndpoint {
 
 export interface OpenRouterCatalogue {
   freeIds: string[];
+  /** The providers serving each free id at a zero price, which its free lane pins. */
+  freeProviders: Map<string, string[]>;
   /** Per-model upstream-host pricing for explicitly-requested paid ids. */
   paidEndpoints: Map<string, OpenRouterPaidEndpoint[]>;
   /** Model ids whose input modalities do NOT include "image". A request
@@ -103,6 +105,16 @@ function isZeroPricing(p: OpenRouterPricing | undefined): boolean {
     if (!Number.isFinite(n) || n !== 0) return false;
   }
   return true;
+}
+
+function freeProvidersOf(endpoints: OpenRouterEndpoint[]): string[] {
+  const names = endpoints
+    .filter(
+      (ep) => (ep.status ?? 0) >= 0 && isZeroPricing(ep.pricing) && ep.tag,
+    )
+    .map((ep) => ep.provider_name ?? "")
+    .filter((n) => n !== "");
+  return [...new Set(names)];
 }
 
 async function fetchModelEndpoints(
@@ -143,7 +155,12 @@ export async function discoverOpenRouterFreeModels(
   });
 
   if (!raw?.data?.length)
-    return { freeIds: [], paidEndpoints: new Map(), textOnlyIds: new Set() };
+    return {
+      freeIds: [],
+      freeProviders: new Map(),
+      paidEndpoints: new Map(),
+      textOnlyIds: new Set(),
+    };
 
   // Modality is a property of the model, not of a host, so it is read once from
   // the catalogue rather than per endpoint.
@@ -170,22 +187,23 @@ export async function discoverOpenRouterFreeModels(
     candidates.map((m) =>
       limit(async () => {
         const endpoints = await fetchModelEndpoints(baseUrl, apiKey, m.id);
-        const hasFree = endpoints.some(
-          (ep) => (ep.status ?? 0) >= 0 && isZeroPricing(ep.pricing) && ep.tag,
-        );
-        return { id: m.id, hasFree };
+        return { id: m.id, providers: freeProvidersOf(endpoints) };
       }),
     ),
   );
 
-  const freeIds: string[] = [];
-  for (const r of results) if (r.hasFree) freeIds.push(r.id);
+  const freeProviders = new Map<string, string[]>();
+  for (const r of results)
+    if (r.providers.length > 0) freeProviders.set(r.id, r.providers);
 
   const paidEndpoints = new Map<string, OpenRouterPaidEndpoint[]>();
   await Promise.all(
     paidIds.map((id) =>
       limit(async () => {
         const endpoints = await fetchModelEndpoints(baseUrl, apiKey, id);
+        // A paid model can carry one free provider; it gets a free lane of its own.
+        const free = freeProvidersOf(endpoints);
+        if (free.length > 0) freeProviders.set(id, free);
         const hosts: OpenRouterPaidEndpoint[] = [];
         for (const ep of endpoints) {
           const prompt = highestPrice(ep.pricing, "prompt");
@@ -211,5 +229,10 @@ export async function discoverOpenRouterFreeModels(
     ),
   );
 
-  return { freeIds, paidEndpoints, textOnlyIds };
+  return {
+    freeIds: [...freeProviders.keys()],
+    freeProviders,
+    paidEndpoints,
+    textOnlyIds,
+  };
 }
