@@ -77,13 +77,16 @@ const LADDER: readonly RuleId[] = [
 // platform refusal sent as the reply at 200 is billed and never failed over; and
 // a reply whose own model field names another model is not the model sold. A
 // model that thinks only when asked and skips it at high effort is the same
-// model run without its reasoning, which users read as a worse one.
+// model run without its reasoning, which users read as a worse one. A persona
+// prompt cannot change how the backend splits text, so a vocabulary of another
+// maker is another model.
 const ENFORCED: readonly RuleId[] = [
   "masked-identity",
   "fake-200",
   "substituted",
   "served-model-mismatch",
   "thinking-honored",
+  "tokenizer-family",
 ];
 // Never a verdict, only evidence. The survey asks its own questions (injected
 // system prompt, a sum, a JSON self-description); the answer fingerprint is
