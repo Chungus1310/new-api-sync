@@ -1,3 +1,4 @@
+import { consola } from "consola";
 import {
   CHANNEL_TYPES,
   getTaskModelOverride,
@@ -215,6 +216,17 @@ const resolveAdjustmentDetailed = (
     modelMapping: args.modelMapping,
   });
 
+// Ratios within `factor` of each other agree; an unknown side agrees.
+const completionRatioAgrees = (
+  a: number | undefined,
+  b: number | undefined,
+  factor = 2,
+): boolean =>
+  a === undefined ||
+  b === undefined ||
+  b <= 0 ||
+  (a >= b / factor && a <= b * factor);
+
 export function computePricedPlan(args: ComputeArgs): PricedPlan {
   const { offers, baseline, canonical, pricingSources, reverseMapping } = args;
   const drops: PricedDrop[] = [];
@@ -270,6 +282,16 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
       canonicalRatio === undefined && pricingSources.length > 0
         ? resolveMedianPricing(model, pricingSources, reverseMapping)
         : undefined;
+    // The list's out/in ratio. A single lane's own ratio is that merchant's
+    // price shape: one that sells input near free (glm-5.3 at 123, deepseek
+    // at 120 against a list of 3.14 and 4) billed every lane's output 30x.
+    const listCompletionRatio = (
+      listHit ??
+      medianHit ??
+      (pricingSources.length > 0
+        ? resolveMedianPricing(model, pricingSources, reverseMapping)
+        : undefined)
+    )?.completionRatio;
     const rawSourceHit = canonicalRatio !== undefined ? listHit : undefined;
     const sourceHit =
       rawSourceHit !== undefined &&
@@ -307,6 +329,7 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
     const markupLane =
       co !== undefined &&
       coOffer !== undefined &&
+      completionRatioAgrees(co.upstreamCompletionRatio, listCompletionRatio) &&
       (() => {
         const r = resolveAdjustmentDetailed(coOffer, co, args);
         return r.perModel && r.value > 0;
@@ -328,7 +351,7 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
       createCacheRatio = sourceHit.createCacheRatio;
     } else if (canonicalRatio !== undefined) {
       writtenRatio = canonicalRatio;
-      completionRatio = co?.upstreamCompletionRatio ?? 1;
+      completionRatio = listCompletionRatio ?? co?.upstreamCompletionRatio ?? 1;
       cacheRatio = co?.cacheRatio;
       createCacheRatio = co?.createCacheRatio;
     } else if (medianHit) {
@@ -355,6 +378,18 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
       const allFree = occurrences.every((o) => o.model.isFree);
       writtenRatio = allFree ? 0 : 1;
       completionRatio = allFree ? 0 : 1;
+    }
+
+    if (
+      existing &&
+      existing.completionRatio > 0 &&
+      completionRatio > 0 &&
+      !completionRatioAgrees(completionRatio, existing.completionRatio, 4)
+    ) {
+      consola.warn(
+        `[pricing] ${model}: completion ratio ${completionRatio} is more than 4x off the stored ${existing.completionRatio}, keeping the stored one`,
+      );
+      completionRatio = existing.completionRatio;
     }
 
     if (cacheRatio === undefined && pricingSources.length > 0) {
