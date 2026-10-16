@@ -17,8 +17,34 @@ interface OpenRouterPricing {
   input_audio_cache?: string;
   internal_reasoning?: string;
   web_search?: string;
-  discount?: string;
+  /** Share taken off the listed prices for now: Baidu lists deepseek at 81% off. */
+  discount?: number | string;
+  /** Prompt-length or time-of-day tiers (prompts of 100k+ cost 5x on haiku-5.5). */
+  overrides?: OpenRouterPriceTier[];
 }
+
+type PricedField = "prompt" | "completion" | "input_cache_read";
+type OpenRouterPriceTier = Partial<Record<PricedField, string>>;
+
+// The most an endpoint can bill per token: its dearest tier with any discount
+// undone. Lanes are priced on this, because OpenRouter bills the tier a request
+// lands in and the discount can lapse; pricing on the base sold haiku-5.5's long
+// prompts at 40% of cost and baidu's deepseek at a quarter of it.
+function highestPrice(
+  pricing: OpenRouterPricing | undefined,
+  field: PricedField,
+): number {
+  const base = Number(pricing?.[field]);
+  if (!Number.isFinite(base)) return Number.NaN;
+  let highest = base;
+  for (const tier of pricing?.overrides ?? []) {
+    const v = Number(tier[field]);
+    if (Number.isFinite(v) && v > highest) highest = v;
+  }
+  const discount = Number(pricing?.discount ?? 0);
+  return discount > 0 && discount < 1 ? highest / (1 - discount) : highest;
+}
+
 interface OpenRouterModel {
   id: string;
   pricing?: OpenRouterPricing;
@@ -162,10 +188,10 @@ export async function discoverOpenRouterFreeModels(
         const endpoints = await fetchModelEndpoints(baseUrl, apiKey, id);
         const hosts: OpenRouterPaidEndpoint[] = [];
         for (const ep of endpoints) {
-          const prompt = Number(ep.pricing?.prompt);
-          const completion = Number(ep.pricing?.completion);
+          const prompt = highestPrice(ep.pricing, "prompt");
+          const completion = highestPrice(ep.pricing, "completion");
           if (!Number.isFinite(prompt) || prompt <= 0) continue;
-          const cacheReadRaw = Number(ep.pricing?.input_cache_read);
+          const cacheReadRaw = highestPrice(ep.pricing, "input_cache_read");
           hosts.push({
             provider: ep.provider_name ?? "",
             tag: ep.tag ?? "",
