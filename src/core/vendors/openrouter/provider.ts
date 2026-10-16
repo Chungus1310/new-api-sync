@@ -414,6 +414,17 @@ export async function processOpenRouterProvider(
           (r) => !freeSet.has(r.upstream),
         );
 
+        const enabledMetadata = getMetadataFromEnabledModels(
+          providerConfig.enabledModels,
+        );
+        const thinkingDisabled = (r: { exposed: string; upstream: string }) =>
+          Object.entries(enabledMetadata).some(
+            ([glob, meta]) =>
+              meta.disableThinking === true &&
+              (matchesAnyPattern(r.exposed, [glob]) ||
+                matchesAnyPattern(r.upstream, [glob])),
+          );
+
         let totalVendors = 0;
         const emitFreeTier = () => {
           if (freeResolutions.length === 0) return;
@@ -429,6 +440,15 @@ export async function processOpenRouterProvider(
               modelType: "text",
               testDetail: details.find((d) => d.model === r.upstream),
               isFree: true,
+              // A zero price is often a promotion on the paid id: when it ended on
+              // 2026-10-13, ling-3.1-flash:free kept routing to Novita and billed ~$10 a
+              // day. A price cap of 0 makes OpenRouter refuse instead of charge.
+              paramOverride: JSON.stringify({
+                provider: { max_price: { prompt: 0, completion: 0 } },
+                ...(thinkingDisabled(r)
+                  ? unsupportedParamOps(undefined, true, true)
+                  : {}),
+              }),
             }));
             offers.push({
               provider: name,
@@ -568,14 +588,7 @@ export async function processOpenRouterProvider(
               0,
               hostsWanted,
             );
-            const disableThinking = Object.entries(
-              getMetadataFromEnabledModels(providerConfig.enabledModels),
-            ).some(
-              ([glob, meta]) =>
-                meta.disableThinking === true &&
-                (matchesAnyPattern(r.exposed, [glob]) ||
-                  matchesAnyPattern(r.upstream, [glob])),
-            );
+            const disableThinking = thinkingDisabled(r);
             cheapestHosts.forEach((host, hostIndex) => {
               // OpenRouter only suffixes the tag with the quantization for SOME
               // hosts (novita/fp8), so the rest published a name that said
