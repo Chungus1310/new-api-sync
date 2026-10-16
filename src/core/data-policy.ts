@@ -7,6 +7,7 @@ import {
 } from "@core/validations/config";
 
 interface DataPolicyFields {
+  providerName?: string;
   seatCountry?: string;
   prompts?: DataPolicyPrompts;
   transfer?: DataPolicyTransfer;
@@ -14,6 +15,7 @@ interface DataPolicyFields {
 
 // The gateway's channel setting.data_policy shape.
 export interface DataPolicy {
+  provider?: string;
   seat_country?: string;
   prompts?: DataPolicyPrompts;
   transfer?: DataPolicyTransfer;
@@ -157,8 +159,68 @@ const BY_FAMILY: Array<[RegExp, DataPolicyFields]> = [
   [/^ws\d+$/, { seatCountry: "US", prompts: "unknown", transfer: "unknown" }],
 ];
 
+// Who operates the upstream, as named in the free model consent dialog. Only
+// providers that serve :free models; where the legal entity is not verified
+// the brand and domain stand in.
+// prettier-ignore
+const PROVIDER_NAME: Record<string, string> = {
+  akiyo: "newapi.akiyo.fun",
+  axz1: "ai.axzt.top",
+  bb1: "Forschungszentrum Jülich GmbH (Blablador)",
+  br1: "BlockRun (blockrun.ai)",
+  ce1: "Cohere Inc.",
+  cf1: "Cloudflare, Inc. (Workers AI)",
+  cf2: "Cloudflare, Inc. (Workers AI)",
+  cfr1: "CloudFerro S.A.",
+  dsg1: "myapi.creitingameplays.com",
+  gq1: "Groq, Inc.",
+  hd1: "AI Horde (aihorde.net)",
+  htz1: "Hetzner Online GmbH",
+  jn1: "Jina AI GmbH",
+  k2h1: "MBZUAI (K2 Think)",
+  k2h2: "MBZUAI (K2 Think)",
+  kilo1: "Kilo Code (kilo.ai)",
+  ltr1: "LiteRouter (literouter.com)",
+  mcd1: "OpenRouter, Inc.",
+  mx1: "Mixlayer (mixlayer.ai)",
+  nara1: "Nara (bynara.id)",
+  ng1: "NagaAI (naga.ac)",
+  qr5: "Qronos (qronos.me)",
+  rqst1: "Requesty (requesty.ai)",
+  sense1: "SenseTime (SenseNova)",
+  shu1: "shu26.cfd",
+  sl1: "AI Singapore (SEA-LION)",
+  tph1: "Typhoon (opentyphoon.ai)",
+  trp1: "TokenReply (tokenreply.com)",
+  wuh1: "wuhu.lol",
+  yjs1: "yjs.im",
+  zai1: "Z.ai (api.z.ai)",
+  zm1: "ZenMux (zenmux.ai)",
+};
+
+// prettier-ignore
+const PROVIDER_NAME_BY_FAMILY: Array<[RegExp, string]> = [
+  [/^cat\d+$/, "ch.at"],
+  [/^cfp\d+$/, "Cloudflare, Inc. (AI Playground)"],
+  [/^chat\d+$/, "Zhipu AI (chatglm.cn)"],
+  [/^dahl\d+$/, "Dahl (inference.dahl.global)"],
+  [/^ey\d+$/, "eye2.ai"],
+  [/^gem\d+$/, "Google LLC (Gemini API)"],
+  [/^gm\d+$/, "Google LLC (Gemini)"],
+  [/^kl\d+$/, "Kilo Code (kilo.ai)"],
+  [/^mars\d+$/, "marsai.click"],
+  [/^nvda\d+$/, "NVIDIA Corporation"],
+  [/^open\d+$/, "OpenRouter, Inc."],
+];
+
 function defaultsFor(name: string): DataPolicyFields | undefined {
-  return BY_NAME[name] ?? BY_FAMILY.find((entry) => entry[0].test(name))?.[1];
+  const fields =
+    BY_NAME[name] ?? BY_FAMILY.find((entry) => entry[0].test(name))?.[1];
+  const providerName =
+    PROVIDER_NAME[name] ??
+    PROVIDER_NAME_BY_FAMILY.find((entry) => entry[0].test(name))?.[1];
+  if (!fields && !providerName) return undefined;
+  return { ...fields, ...(providerName ? { providerName } : {}) };
 }
 
 export function withDataPolicyDefaults(
@@ -168,6 +230,7 @@ export function withDataPolicyDefaults(
   if (!defaults) return provider;
   return {
     ...provider,
+    providerName: provider.providerName ?? defaults.providerName,
     seatCountry: provider.seatCountry ?? defaults.seatCountry,
     prompts: provider.prompts ?? defaults.prompts,
     transfer: provider.transfer ?? defaults.transfer,
@@ -178,6 +241,7 @@ export function dataPolicyOf(
   provider: DataPolicyFields,
 ): DataPolicy | undefined {
   const policy: DataPolicy = {
+    ...(provider.providerName ? { provider: provider.providerName } : {}),
     ...(provider.seatCountry ? { seat_country: provider.seatCountry } : {}),
     ...(provider.prompts ? { prompts: provider.prompts } : {}),
     ...(provider.transfer ? { transfer: provider.transfer } : {}),
@@ -210,10 +274,12 @@ export function readDataPolicy(value: unknown): DataPolicy | undefined {
     const v = raw.get(key);
     return typeof v === "string" && v !== "" ? v : undefined;
   };
+  const name = pick("provider");
   const seat = pick("seat_country");
   const prompts = pick("prompts");
   const transfer = pick("transfer");
   const policy = {
+    ...(name ? { provider: name } : {}),
     ...(seat ? { seat_country: seat } : {}),
     ...(prompts && isPrompts(prompts) ? { prompts } : {}),
     ...(transfer && isTransfer(transfer) ? { transfer } : {}),
@@ -234,6 +300,7 @@ function isTransfer(v: string): v is DataPolicyTransfer {
 
 export function sameDataPolicy(a?: DataPolicy, b?: DataPolicy): boolean {
   return (
+    a?.provider === b?.provider &&
     a?.seat_country === b?.seat_country &&
     a?.prompts === b?.prompts &&
     a?.transfer === b?.transfer
