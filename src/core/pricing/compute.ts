@@ -25,6 +25,7 @@ import {
 import {
   resolveBasePricing,
   resolveCacheRatio,
+  resolveListCompletionRatio,
   resolveMedianPricing,
 } from "./resolver";
 import type { PricingSource } from "./sources/types";
@@ -285,13 +286,22 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
     // The list's out/in ratio. A single lane's own ratio is that merchant's
     // price shape: one that sells input near free (glm-5.3 at 123, deepseek
     // at 120 against a list of 3.14 and 4) billed every lane's output 30x.
-    const listCompletionRatio = (
+    const listShape =
       listHit ??
       medianHit ??
       (pricingSources.length > 0
         ? resolveMedianPricing(model, pricingSources, reverseMapping)
-        : undefined)
-    )?.completionRatio;
+        : undefined);
+    const listRatio = canonicalRatio ?? medianHit?.modelRatio;
+    const listCompletionRatio =
+      listRatio !== undefined
+        ? (resolveListCompletionRatio(
+            model,
+            pricingSources,
+            reverseMapping,
+            listRatio,
+          ) ?? medianHit?.completionRatio)
+        : listShape?.completionRatio;
     const rawSourceHit = canonicalRatio !== undefined ? listHit : undefined;
     const sourceHit =
       rawSourceHit !== undefined &&

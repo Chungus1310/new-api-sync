@@ -106,6 +106,35 @@ export function resolveBasePricing(
   return undefined;
 }
 
+// The list's output/input ratio, taken only from sources whose input price agrees
+// with the voted one: LiteLLM listed deepseek-v4.1-flash at $0.01 in and $1.20 out
+// (a cache price in the input field), and as the first source its 120 billed every
+// lane's output 30x for 17 hours on 2026-10-17. Upper middle, so a split list
+// bills the dearer shape.
+export function resolveListCompletionRatio(
+  modelName: string,
+  sources: PricingSource[],
+  reverseMapping: Map<string, string>,
+  listRatio: number,
+): number | undefined {
+  const ratios: number[] = [];
+  for (const source of sources) {
+    const hit = lookup(modelName, source.pricing, reverseMapping);
+    const v = hit?.value;
+    if (!v || v.completionRatio === undefined || v.completionRatio <= 0)
+      continue;
+    if (
+      Math.abs(v.modelRatio - listRatio) >
+      0.25 * Math.max(v.modelRatio, listRatio)
+    )
+      continue;
+    ratios.push(v.completionRatio);
+  }
+  if (ratios.length === 0) return undefined;
+  ratios.sort((a, b) => a - b);
+  return ratios[Math.ceil((ratios.length - 1) / 2)];
+}
+
 // The cache discount as a fraction of input, the median over every source that
 // states one. Sources disagree widely (2% to 22% for deepseek-v4.1-flash), so
 // taking whichever one priced the model first flipped it on every run, and a run
