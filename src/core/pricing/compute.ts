@@ -392,14 +392,12 @@ export function computePricedPlan(args: ComputeArgs): PricedPlan {
       completionRatio = existing.completionRatio;
     }
 
+    // A run that resolves no cache price must not fall back to the gateway's
+    // default of 1: that billed cache reads at the full input rate.
     if (cacheRatio === undefined && pricingSources.length > 0) {
-      cacheRatio = resolveCacheRatio(
-        model,
-        pricingSources,
-        reverseMapping,
-        writtenRatio,
-      );
+      cacheRatio = resolveCacheRatio(model, pricingSources, reverseMapping);
     }
+    cacheRatio ??= existing?.cacheRatio;
 
     // No fixed occurrence: this model bills per-token (ratio + completionRatio). If we resolved a
     // real ratio (source/canonical/upstream), it is genuinely per-token now, so DROP any stale

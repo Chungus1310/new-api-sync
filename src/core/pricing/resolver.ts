@@ -100,35 +100,30 @@ export function resolveBasePricing(
     const hit = lookup(modelName, source.pricing, reverseMapping);
     if (!hit) continue;
     if (hit.value.cacheRatio !== undefined) return hit.value;
-    const cacheRatio = resolveCacheRatio(
-      modelName,
-      sources,
-      reverseMapping,
-      hit.value.modelRatio,
-    );
+    const cacheRatio = resolveCacheRatio(modelName, sources, reverseMapping);
     return cacheRatio === undefined ? hit.value : { ...hit.value, cacheRatio };
   }
   return undefined;
 }
 
-// A source without a cache price would otherwise leave cache reads billed at the
-// full input rate; take it from any source that agrees on the input price.
+// The cache discount as a fraction of input, the median over every source that
+// states one. Sources disagree widely (2% to 22% for deepseek-v4.1-flash), so
+// taking whichever one priced the model first flipped it on every run, and a run
+// where none matched billed cache reads at the full input rate.
 export function resolveCacheRatio(
   modelName: string,
   sources: PricingSource[],
   reverseMapping: Map<string, string>,
-  modelRatio: number,
 ): number | undefined {
+  const ratios: number[] = [];
   for (const source of sources) {
-    const hit = lookup(modelName, source.pricing, reverseMapping)?.value;
-    if (
-      hit?.cacheRatio !== undefined &&
-      Math.abs(hit.modelRatio - modelRatio) <= modelRatio * 0.01
-    ) {
-      return hit.cacheRatio;
-    }
+    const ratio = lookup(modelName, source.pricing, reverseMapping)?.value
+      .cacheRatio;
+    if (ratio !== undefined && ratio >= 0 && ratio <= 1) ratios.push(ratio);
   }
-  return undefined;
+  if (ratios.length === 0) return undefined;
+  ratios.sort((a, b) => a - b);
+  return ratios[Math.floor((ratios.length - 1) / 2)];
 }
 
 /**
