@@ -254,6 +254,17 @@ export function dataPolicyOf(
   return Object.keys(policy).length > 0 ? policy : undefined;
 }
 
+// The gateway keys a consent on the set of providers behind a model, so every
+// declared provider carries an identity: the operator name when known, else
+// the lane family, so chat1..chat53 count as one provider and a new shard does
+// not void consents. Internal only, the gateway never publishes it.
+function providerIdentity(provider: AnyProviderConfig): string {
+  return (
+    provider.providerName ??
+    (provider.name.replace(/\d+$/, "") || provider.name)
+  );
+}
+
 // Channel tag -> policy, for the providers this config declares. A tag the
 // config does not declare is absent, so callers leave those channels alone.
 export function dataPolicyByTag(
@@ -261,8 +272,10 @@ export function dataPolicyByTag(
 ): Map<string, DataPolicy> {
   const byTag = new Map<string, DataPolicy>();
   for (const provider of providers) {
-    const policy = dataPolicyOf(provider);
-    if (!policy) continue;
+    const policy: DataPolicy = {
+      provider: providerIdentity(provider),
+      ...dataPolicyOf(provider),
+    };
     byTag.set(provider.name, policy);
     if ("channelTag" in provider && provider.channelTag)
       byTag.set(provider.channelTag, policy);
