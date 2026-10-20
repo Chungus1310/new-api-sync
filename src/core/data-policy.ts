@@ -28,7 +28,7 @@ export interface DataPolicy {
 // provider block in config.yml wins. Providers absent here publish no data_policy.
 // prettier-ignore
 const BY_NAME: Record<string, DataPolicyFields> = {
-  a7: { seatCountry: "CN", prompts: "unknown", transfer: "none" },
+  a7: { seatCountry: "CN", prompts: "retains", transfer: "none" },
   aaw1: { seatCountry: "CN", prompts: "unknown", transfer: "none" },
   acx1: { prompts: "unknown", transfer: "none" },
   agnes1: { seatCountry: "SG", prompts: "trains", transfer: "none" },
