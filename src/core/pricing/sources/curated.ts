@@ -831,6 +831,13 @@ const CURATED: Record<string, SourceMetadata> = {
     inputModalities: ["text"],
     outputModalities: ["decisions"],
   },
+  "jev-1.14": {
+    releaseDate: iso("2026-10-14"),
+    contextWindow: 262_144,
+    maxInputTokens: 262_144,
+    inputModalities: ["text"],
+    outputModalities: ["decisions"],
+  },
   // Inception Mercury Decide (OpenRouter inception/mercury-decide:free, 2026-09-30):
   // a decisions model, absent from OpenRouter's model list like Jev.
   "mercury-decide": {
