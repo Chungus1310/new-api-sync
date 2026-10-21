@@ -79,7 +79,8 @@ const BY_NAME: Record<string, DataPolicyFields> = {
   kdy1: { seatCountry: "CN", prompts: "unknown", transfer: "none" },
   kn1: { seatCountry: "ID", prompts: "none", transfer: "none" },
   lf1: { seatCountry: "US", prompts: "retains", transfer: "none" },
-  lkp1: { seatCountry: "HK", prompts: "unknown", transfer: "none" },
+  // Written statement 21.10.2026 (linkapi@163.com): no storage of request content, no training, partners likewise; servers US.
+  lkp1: { seatCountry: "HK", prompts: "none", transfer: "none" },
   llm71: { seatCountry: "GB", prompts: "unknown", transfer: "unknown" },
   lmh1: { prompts: "unknown", transfer: "none" },
   lnk1: { seatCountry: "HK", prompts: "none", transfer: "none" },
