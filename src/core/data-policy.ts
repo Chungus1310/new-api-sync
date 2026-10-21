@@ -29,8 +29,8 @@ export interface DataPolicy {
 // prettier-ignore
 const BY_NAME: Record<string, DataPolicyFields> = {
   a7: { seatCountry: "CN", prompts: "retains", transfer: "none" },
-  // Written statement 21.10.2026 (WeChat SuperLong1129): no storage, no training incl. upstream, no third parties, seat US.
-  aaw1: { seatCountry: "US", prompts: "none", transfer: "none" },
+  // WeChat 21.10.2026 (SuperLong1129): stores and trains on nothing itself, seat US, but forwards to OpenAI, whose API keeps inputs up to 30 days for abuse monitoring.
+  aaw1: { seatCountry: "US", prompts: "retains", transfer: "none" },
   acx1: { prompts: "unknown", transfer: "none" },
   agnes1: { seatCountry: "SG", prompts: "trains", transfer: "none" },
   ah1: { prompts: "unknown", transfer: "none" },
