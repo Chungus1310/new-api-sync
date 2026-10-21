@@ -29,7 +29,8 @@ export interface DataPolicy {
 // prettier-ignore
 const BY_NAME: Record<string, DataPolicyFields> = {
   a7: { seatCountry: "CN", prompts: "retains", transfer: "none" },
-  aaw1: { seatCountry: "CN", prompts: "unknown", transfer: "none" },
+  // Written statement 21.10.2026 (WeChat SuperLong1129): no storage, no training incl. upstream, no third parties, seat US.
+  aaw1: { seatCountry: "US", prompts: "none", transfer: "none" },
   acx1: { prompts: "unknown", transfer: "none" },
   agnes1: { seatCountry: "SG", prompts: "trains", transfer: "none" },
   ah1: { prompts: "unknown", transfer: "none" },
